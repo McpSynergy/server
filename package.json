@@ -5,9 +5,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:express": "cd servers/express && pnpm start"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^22.14.1",
+    "openai": "^4.95.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
 }
