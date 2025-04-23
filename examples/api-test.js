@@ -11,11 +11,14 @@ fetch("http://localhost:3000/message", {
     messages: [
       {
         role: "user",
-        content: "Hello, how are you?",
+        content:
+          "压缩图片 /Users/yangjie/Desktop/iShot_2025-03-21_15.21.31.png ，压缩质量为 0.8",
       },
     ],
   }),
 }).then(async (response) => {
+  console.log("response", response);
+
   const reader = response.body.getReader();
   let fullResponse = "";
   while (true) {
@@ -24,16 +27,5 @@ fetch("http://localhost:3000/message", {
     const chunk = new TextDecoder().decode(value);
     fullResponse += chunk;
   }
-  const contentArray = fullResponse
-    .split("\n")
-    .filter((line) => line.startsWith("data:"))
-    .map((line) => {
-      try {
-        return JSON.parse(line.replace("data: ", "")).content;
-      } catch (e) {
-        return "";
-      }
-    });
-  const combinedContent = contentArray.join("");
-  console.log("完整响应内容:", combinedContent);
+  console.log("完整响应内容:", JSON.parse(fullResponse));
 });
