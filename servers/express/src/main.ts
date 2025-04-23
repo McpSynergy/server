@@ -3,37 +3,33 @@ import { Signature } from './signature';
 import { signatureMiddleware } from './middleware/signatureMiddleware';
 
 import OpenAI from "openai";
+
+import 'dotenv/config'
+
+
 const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY
+  apiKey: process.env.DEEPSEEK_API_KEY,
 });
 
-
-
-const app = express();
-const port = 3000;
-
-app.use(signatureMiddleware);
-
 const data = {
-  "timestamp": new Date().getTime(),
   "nonce": "a3fB9zLpQ2RgT8yX",
   "payload": {
     "user_id": "USER_6192_XYZ",
   }
 }
-const secret = 'd2ViU2lnbmF0dXJlU2VjcmV0XzE3MDkyNTQ1Njg=';
-const signature = Signature.generateSignature(JSON.stringify(data), secret);
-console.log(`Signature: ${signature}`);
+const signature = Signature.generateSignature(JSON.stringify(data), process.env.SECRET);
 
+console.log("signature", signature);
 
+const app = express();
+const port = 3000;
+
+app.use(express.json());
+app.use(signatureMiddleware);
 
 app.get('/', (req, res) => {
   // 从 req 中获取 signature
-  const signature = req.query?.signature as string;
-  console.log(`Signature: ${signature}`);
-  const isValid = signature ? Signature.verifySignature(JSON.stringify(data), secret, signature) : false;
-  console.log(`Signature verification result: ${isValid}`);
   res.send('Hello World!');
 });
 
