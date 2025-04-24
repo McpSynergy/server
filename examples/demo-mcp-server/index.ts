@@ -1,0 +1,162 @@
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import path from 'path';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ErrorCode,
+  McpError,
+  Tool,
+  CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const TOOLS: Tool[] = [{
+  name: "userProfile",
+  description: "Show user profile",
+  inputSchema: {
+    type: "object",
+    properties: {
+      userName: {
+        type: "string",
+        description: "User name",
+      },
+    },
+    required: ["userName"]
+  },
+}
+];
+
+class MCPImageCompression {
+  server: Server;
+  constructor() {
+    this.server = new Server({
+      name: "mcp-component-render",
+      version: "1.0.0",
+    }, {
+      capabilities: {
+        tools: {},
+      },
+    });
+
+    this.setupHandlers();
+    this.setupErrorHandling();
+  }
+  private setupErrorHandling(): void {
+    this.server.onerror = (error) => {
+      console.error("[MCP Error]", error);
+    };
+
+    process.on('SIGINT', async () => {
+      await this.stop();
+      process.exit(0);
+    });
+  }
+
+
+  private setupHandlers() {
+    // List available tools
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: TOOLS
+    }));
+
+    // Handle tool calls
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) =>
+      this.handleToolCall(request.params.name, request.params.arguments ?? {})
+    );
+  }
+  /**
+   * Handles tool call requests
+   */
+  private async handleToolCall(name: string, args: any): Promise<CallToolResult> {
+    const { userName } = args;
+    switch (name) {
+      case "userProfile": {
+        try {
+          return {
+            content: [{
+              type: "text",
+              text: `user name is ${userName}`,
+            }],
+            meta: {
+              userName,
+              props: {
+                user: {
+                  name: userName,
+                  title: "Senior Developer",
+                  avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=1",
+                  email: `${userName}@example.com`,
+                  phone: "+1 234 567 890",
+                  skills: [
+                    { name: "JavaScript", color: "gold" },
+                  ],
+                  stats: {
+                    projects: 24,
+                    followers: 1489,
+                    following: 583,
+                  },
+                }
+              }
+            },
+            isError: false
+          }
+        } catch (error) {
+          if (error instanceof McpError) {
+            throw error;
+          }
+
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Failed to process transcript: ${(error as Error).message}`
+          );
+        }
+      }
+      default: {
+        throw new McpError(ErrorCode.MethodNotFound, `Tool ${name} not found`, {
+          code: ErrorCode.MethodNotFound,
+          message: `Tool ${name} not found`
+        });
+      }
+
+    }
+  }
+  /**
+   * Starts the server
+   */
+  async start(): Promise<void> {
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+
+  }
+  /**
+   * Stops the server
+   */
+  async stop(): Promise<void> {
+    try {
+      await this.server.close();
+    } catch (error) {
+      console.error('Error while stopping server:', error);
+    }
+  }
+}
+
+const server = new MCPImageCompression();
+
+// Main execution
+async function main() {
+  try {
+    await server.start();
+  } catch (error) {
+    console.error("Server failed to start:", error);
+    process.exit(1);
+  }
+}
+
+main().catch((error) => {
+  console.error("Fatal server error:", error);
+  process.exit(1);
+});
+
+process.on('SIGINT', async () => {
+  await server.stop();
+  process.exit(0);
+})

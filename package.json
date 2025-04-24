@@ -5,9 +5,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:express": "cd servers/express && pnpm start",
+    "demo:mcp": "cd examples/demo-mcp-server && pnpm build"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@types/node": "^22.14.1",
+    "dotenv": "^16.5.0",
+    "openai": "^4.95.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
 }
