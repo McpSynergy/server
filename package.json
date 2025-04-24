@@ -5,12 +5,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:express": "cd servers/express && pnpm start"
+    "start:express": "cd servers/express && pnpm start",
+    "demo:mcp": "cd examples/demo-mcp-server && pnpm build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
     "@types/node": "^22.14.1",
     "dotenv": "^16.5.0",
     "openai": "^4.95.1",

@@ -102,13 +102,14 @@ app.post('/message', async (req, res) => {
     const response = await openai.chat.completions.create({
       messages: messages || [{ role: "system", content: "You are a helpful assistant." }],
       model: "deepseek-chat",
-      tools: availableTools
+      tools: availableTools,
     });
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     const content = response.choices[0]
+    let meta = {}
 
     let responseMessage = content.message.content;
 
@@ -129,12 +130,37 @@ app.post('/message', async (req, res) => {
         serverName,
         toolName: functionName,
         toolArgs,
-      })
-      console.log("success", res);
-      responseMessage = JSON.stringify(res)
-    }
+      }) as any
 
-    res.write(JSON.stringify(responseMessage));
+      // console.log("res", res);
+
+      // @ts-ignore
+      // const res_ = res
+      // @ts-ignore
+      console.log("success", res, res.data.content);
+      const prefix = `匹配到了 MCP 服务器 ${serverName} 中的工具 ${functionName}，返回结果为：\n`
+      responseMessage = prefix + `
+      \n
+      \`\`\`json
+      ${JSON.stringify(res.data.content, null, 2)}
+      \`\`\`
+      \n
+      `
+      meta = {
+        serverName,
+        toolName: functionName,
+        componentProps: res.data.meta?.props
+      }
+    }
+    console.log("responseMessage", responseMessage);
+
+    res.write(JSON.stringify({
+      code: 0,
+      data: {
+        content: responseMessage,
+        meta,
+      }
+    }));
     res.end()
   } catch (error) {
     console.error('Error:', error);
