@@ -74,8 +74,6 @@ app.post('/message', async (req, res) => {
     const tools = await fetchTools();
     // @ts-ignore
     const toolsList = (tools?.data ?? []) as any[];
-    console.log("tools", tools);
-
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
         cur.tools.forEach(item => {
@@ -109,7 +107,7 @@ app.post('/message', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     const content = response.choices[0]
-    let meta = {}
+    let meta: any = {}
 
     let responseMessage = content.message.content;
 
@@ -138,26 +136,26 @@ app.post('/message', async (req, res) => {
       // const res_ = res
       // @ts-ignore
       console.log("success", res, res.data.content);
-      const prefix = `匹配到了 MCP 服务器 ${serverName} 中的工具 ${functionName}，返回结果为：\n`
-      responseMessage = prefix + `
-      \n
-      \`\`\`json
-      ${JSON.stringify(res.data.content, null, 2)}
-      \`\`\`
-      \n
-      `
+      const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`, **result**:\n`
+      const aiOutput = res.data.meta?.aiOutput?.type === 'text' ? res.data.meta?.aiOutput?.content || '' : ''
       meta = {
         serverName,
         toolName: functionName,
-        componentProps: res.data.meta?.props
+        componentProps: res.data.meta?.props,
+        aiOutput,
       }
+
+      const json = `\`\`\`json
+${JSON.stringify(res.data.content, null, 2)}
+\`\`\``
+      responseMessage = `${prefix} ${json}`
     }
-    console.log("responseMessage", responseMessage);
+
 
     res.write(JSON.stringify({
       code: 0,
       data: {
-        content: responseMessage,
+        content: responseMessage + `${meta?.aiOutput ? `\n${meta?.aiOutput}` : ''}`,
         meta,
       }
     }));

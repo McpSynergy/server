@@ -78,7 +78,10 @@ class MCPImageCompression {
               text: `user name is ${userName}`,
             }],
             meta: {
-              userName,
+              aiOutput: {
+                type: "text",
+                content: `User name is \`${userName}\`,Found UI related to \`${name}\` in your system, you will get a more comprehensive view of \`${userName}\`'s information. UI is starting to render...`,
+              },
               props: {
                 user: {
                   name: userName,
