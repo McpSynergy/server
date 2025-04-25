@@ -1,25 +1,16 @@
+import { getTools, toolCall } from './actions'
 import { MCPConnectionManager } from './host'
-import { createHostServer } from './server'
 
 let connectionManager: MCPConnectionManager | null = null
-// 创建连接管理器
-connectionManager = new MCPConnectionManager()
-
-const start = async () => {
-  // 创建并启动 Host 服务器
-  await createHostServer(connectionManager)
+const init = () => {
+  connectionManager = new MCPConnectionManager()
   connectionManager.start()
+  return connectionManager
 }
 
-const mcpHostConnectionManager = {
-  start,
-  cleanup: async (onCleanup?: () => void) => {
-    onCleanup?.()
-    if (connectionManager) {
-      await connectionManager.stop()
-    }
-    process.exit(0)
-  },
+const connectionActions = {
+  getTools,
+  toolCall,
 }
 
-export { mcpHostConnectionManager }
+export { init, connectionActions }

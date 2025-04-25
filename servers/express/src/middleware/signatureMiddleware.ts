@@ -17,6 +17,7 @@ export const signatureMiddleware = (
   if (!signature) {
     return res.status(401).json({ error: 'Signature is required' });
   }
+  // @ts-ignore
   const isValid = Signature.verifySignature(JSON.stringify(data), process.env.SECRET, signature);
   if (!isValid) {
     return res.status(401).json({ error: 'Invalid signature' });

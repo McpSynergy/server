@@ -1,32 +1,24 @@
 import express from 'express';
-import { Signature } from './signature';
 import { signatureMiddleware } from './middleware/signatureMiddleware';
 
 import OpenAI from "openai";
 
 import 'dotenv/config'
-// import { MCPConnectionManager } from '@mcp-synergy/mcp-host/dist/types/host';
 
+import { init, connectionActions } from '@mcp-synergy/mcp-host'
+
+const connectionManager = init();
 
 const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com',
   apiKey: process.env.DEEPSEEK_API_KEY,
 });
 
-const data = {
-  "nonce": "a3fB9zLpQ2RgT8yX",
-  "payload": {
-    "user_id": "USER_6192_XYZ",
-  }
-}
-const signature = Signature.generateSignature(JSON.stringify(data), process.env.SECRET);
-
-console.log("signature", signature);
-
 const app = express();
 const port = 3000;
 
 app.use(express.json());
+// @ts-ignore
 app.use(signatureMiddleware);
 
 app.get('/', (req, res) => {
@@ -34,50 +26,18 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-const fetchTools = async () => {
-  return fetch('http://localhost:17925/api/tools', {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    }
-  }).then(res => res.json())
-}
-
-const toolsCall = async ({
-  serverName,
-  toolName,
-  toolArgs,
-}: {
-  serverName: string;
-  toolName: string;
-  toolArgs: any;
-}) => {
-
-  return fetch('http://localhost:17925/api/tools/toolCall', {
-    method: 'Post',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      server_name: serverName,
-      tool_name: toolName,
-      tool_args: JSON.parse(toolArgs),
-    }),
-  })
-    .then((res) => res.json())
-
-}
-
 app.post('/message', async (req, res) => {
   try {
     const { messages } = req.body;
 
     // 获取可用工具列表
-    const tools = await fetchTools();
+    const tools = await connectionActions.getTools(connectionManager)
+
     // @ts-ignore
-    const toolsList = (tools?.data ?? []) as any[];
+    const toolsList = (tools ?? []) as any[];
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
+        // @ts-ignore
         cur.tools.forEach(item => {
           pre.push({
             "type": "function",
@@ -99,7 +59,7 @@ app.post('/message', async (req, res) => {
     const response = await openai.chat.completions.create({
       messages: messages || [{ role: "system", content: "You are a helpful assistant." }],
       model: "deepseek-chat",
-      tools: availableTools,
+      tools: availableTools ?? [],
     });
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -111,6 +71,7 @@ app.post('/message', async (req, res) => {
     let responseMessage = content.message.content;
 
     if (content.finish_reason === 'tool_calls') {
+      // @ts-ignore
       const toolCall = content.message.tool_calls[0]
       const toolName = toolCall.function.name
       const toolArgs = toolCall.function.arguments
@@ -122,23 +83,25 @@ app.post('/message', async (req, res) => {
       console.log("functionName", functionName);
       console.log("toolArgs", toolArgs);
 
-      // 调用工具
-      const res = await toolsCall({
+      const res = await connectionActions.toolCall({
+        manager: connectionManager,
         serverName,
         toolName: functionName,
-        toolArgs,
+        // @ts-ignore
+        toolArgs: JSON.parse(toolArgs),
       }) as any
+
       const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`, **result**:\n`
-      const aiOutput = res.data.meta?.aiOutput?.type === 'text' ? res.data.meta?.aiOutput?.content || '' : ''
+      const aiOutput = res.meta?.aiOutput?.type === 'text' ? res.meta?.aiOutput?.content || '' : ''
       meta = {
         serverName,
         toolName: functionName,
-        componentProps: res.data.meta?.props,
+        componentProps: res.meta?.props,
         aiOutput,
       }
 
       const json = `\`\`\`json
-${JSON.stringify(res.data.content, null, 2)}
+${JSON.stringify(res.content, null, 2)}
 \`\`\``
       responseMessage = `${prefix} ${json}`
     }

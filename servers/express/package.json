@@ -4,16 +4,35 @@
   "private": true,
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev":"tsx src/main.ts",
-    "build": "rimraf dist && tsc",
-    "start": "pnpm build && node dist/src/main.js "
+    "dev": "tsx src/main.ts",
+    "build": "rimraf dist && rollup -c --environment BUILD:production",
+    "start": "pnpm build && node dist/main.js && shx chmod 755 dist/*.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "@mcp-synergy/mcp-host": "workspace:*",
+    "express": "^5.1.0",
+    "pkce-challenge": "^5.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "prettier": "^3.5.3",
+    "rollup": "^4.35.0",
+    "shx": "^0.3.4",
+    "tslib": "^2.8.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
   }
 }

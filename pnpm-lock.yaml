@@ -5,6 +5,7 @@ importers:
   .:
     specifiers:
       '@modelcontextprotocol/sdk': ^1.7.0
+      '@types/express': ^5.0.0
       '@types/node': ^22.14.1
       dotenv: ^16.5.0
       openai: ^4.95.1
@@ -13,6 +14,7 @@ importers:
       typescript: ^5.8.3
     dependencies:
       '@modelcontextprotocol/sdk': 1.10.2
+      '@types/express': 5.0.1
       '@types/node': 22.14.1
       dotenv: 16.5.0
       openai: 4.95.1
@@ -65,9 +67,48 @@ importers:
 
   servers/express:
     specifiers:
+      '@mcp-synergy/mcp-host': workspace:*
+      '@rollup/plugin-commonjs': ^28.0.3
+      '@rollup/plugin-json': ^6.1.0
+      '@rollup/plugin-node-resolve': ^16.0.1
+      '@rollup/plugin-terser': ^0.4.4
+      '@rollup/plugin-typescript': ^12.1.2
+      '@types/cors': ^2.8.17
+      '@types/express': ^5.0.0
+      '@types/node': ^22.13.10
       express: ^5.1.0
+      pkce-challenge: ^5.0.0
+      prettier: ^3.5.3
+      rollup: ^4.35.0
+      shx: ^0.3.4
+      tslib: ^2.8.1
+      tsx: ^4.19.3
+      typescript: ^5.8.2
     dependencies:
+      '@mcp-synergy/mcp-host': link:../../packages/mcp-host
       express: 5.1.0
+      pkce-challenge: 5.0.0
+    devDependencies:
+      '@rollup/plugin-commonjs': 28.0.3_rollup@4.40.0
+      '@rollup/plugin-json': 6.1.0_rollup@4.40.0
+      '@rollup/plugin-node-resolve': 16.0.1_rollup@4.40.0
+      '@rollup/plugin-terser': 0.4.4_rollup@4.40.0
+      '@rollup/plugin-typescript': 12.1.2_dg2sjq75s72n5lkbs6p22vjd5m
+      '@types/cors': 2.8.17
+      '@types/express': 5.0.1
+      '@types/node': 22.14.1
+      prettier: 3.5.3
+      rollup: 4.40.0
+      shx: 0.3.4
+      tslib: 2.8.1
+      tsx: 4.19.3
+      typescript: 5.8.3
+
+  servers/mcpServers:
+    specifiers: {}
+
+  servers/mcpServers/component-render-mcp:
+    specifiers: {}
 
 packages:
 
@@ -602,13 +643,11 @@ packages:
     dependencies:
       '@types/connect': 3.4.38
       '@types/node': 22.14.1
-    dev: true
 
   /@types/connect/3.4.38:
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
     dependencies:
       '@types/node': 22.14.1
-    dev: true
 
   /@types/cors/2.8.17:
     resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
@@ -627,7 +666,6 @@ packages:
       '@types/qs': 6.9.18
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
-    dev: true
 
   /@types/express/5.0.1:
     resolution: {integrity: sha512-UZUw8vjpWFXuDnjFTh7/5c2TWDlQqeXHi6hcN7F2XSVT5P+WmUnnbFS3KA6Jnc6IsEqI2qCVu2bK0R0J4A8ZQQ==}
@@ -635,15 +673,12 @@ packages:
       '@types/body-parser': 1.19.5
       '@types/express-serve-static-core': 5.0.6
       '@types/serve-static': 1.15.7
-    dev: true
 
   /@types/http-errors/2.0.4:
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
-    dev: true
 
   /@types/mime/1.3.5:
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
-    dev: true
 
   /@types/node-fetch/2.6.12:
     resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
@@ -665,11 +700,9 @@ packages:
 
   /@types/qs/6.9.18:
     resolution: {integrity: sha512-kK7dgTYDyGqS+e2Q4aK9X3D7q234CIZ1Bv0q/7Z5IwRDoADNU81xXJK/YVyLbLTZCoIwUoDoffFeF+p/eIklAA==}
-    dev: true
 
   /@types/range-parser/1.2.7:
     resolution: {integrity: sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==}
-    dev: true
 
   /@types/resolve/1.20.2:
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -680,7 +713,6 @@ packages:
     dependencies:
       '@types/mime': 1.3.5
       '@types/node': 22.14.1
-    dev: true
 
   /@types/serve-static/1.15.7:
     resolution: {integrity: sha512-W8Ym+h8nhuRwaKPaDw34QUkwsGi6Rc4yYqvKFo5rm2FUEhCFbzVWrxXUxuKK8TASjWsysJY0nsmNCGhCOIsrOw==}
@@ -688,7 +720,6 @@ packages:
       '@types/http-errors': 2.0.4
       '@types/node': 22.14.1
       '@types/send': 0.17.4
-    dev: true
 
   /abort-controller/3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}

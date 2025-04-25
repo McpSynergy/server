@@ -14,7 +14,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "mcp-host-use": "./dist/index.js"
+    "mcp-host-use": "./dist/main.js"
   },
   "scripts": {
     "dev": "tsx src/main.ts",
