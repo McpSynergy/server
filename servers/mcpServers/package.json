@@ -1,0 +1,12 @@
+{
+  "name": "mcp-servers",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd component-render-mcp && pnpm build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

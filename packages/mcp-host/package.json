@@ -18,6 +18,7 @@
   },
   "scripts": {
     "dev": "tsx src/main.ts",
+    "start": "npm run build && node dist/main.js",
     "format": "prettier --write \"src/**/*.{js,ts,mjs}\"",
     "build": "npm run format && shx rm -rf dist && rollup -c --environment BUILD:production && shx chmod 755 dist/*.js",
     "prepublishOnly": "npm run build"
@@ -36,6 +37,7 @@
     "@modelcontextprotocol/sdk": "^1.7.0",
     "cors": "^2.8.5",
     "express": "^5.0.1",
+    "pkce-challenge": "^5.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

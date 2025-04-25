@@ -5,10 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:host": "cd packages/mcp-host && pnpm dev",
-    "build:host": "cd packages/mcp-host && pnpm build",
+    "dev:host": "cd packages/mcp-host && pnpm dev",
+    "start:host": "cd packages/mcp-host && pnpm start",
     "start:express": "cd servers/express && pnpm start",
-    "demo:mcp": "cd examples/demo-mcp-server && pnpm build"
+    "build:mcpServers": "cd servers/mcpServers && pnpm build"
   },
   "keywords": [],
   "author": "",

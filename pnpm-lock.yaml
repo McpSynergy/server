@@ -31,6 +31,7 @@ importers:
       '@types/node': ^22.13.10
       cors: ^2.8.5
       express: ^5.0.1
+      pkce-challenge: ^5.0.0
       prettier: ^3.5.3
       rollup: ^4.35.0
       shx: ^0.3.4
@@ -42,6 +43,7 @@ importers:
       '@modelcontextprotocol/sdk': 1.10.2
       cors: 2.8.5
       express: 5.1.0
+      pkce-challenge: 5.0.0
       zod: 3.24.3
     devDependencies:
       '@rollup/plugin-commonjs': 28.0.3_rollup@4.40.0
