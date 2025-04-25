@@ -9,26 +9,22 @@ const extensions = ['.js', '.ts']
 
 export default defineConfig([
   {
-    input: 'src/main.ts',
-    output: [
-      // {
-      //   file: 'dist/index.cjs',
-      //   format: 'cjs',
-      // },
-      {
-        file: 'dist/index.js',
-        format: 'esm',
-        exports: 'named',
-      },
-    ],
+    input: ['./src/index.ts', './src/main.ts'],
+    output: {
+      dir: 'dist',
+      format: 'esm',
+      exports: 'named',
+    },
     plugins: [
       nodeResolve({ extensions }),
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: './dist/types',
       }),
       json(),
       terser(),
     ],
-  }
+  },
 ])

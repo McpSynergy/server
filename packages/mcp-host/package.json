@@ -1,5 +1,5 @@
 {
-  "name": "mcp-host",
+  "name": "@mcp-synergy/mcp-host",
   "version": "0.0.1",
   "author": "liu4426350@qq.com",
   "license": "MIT",
@@ -7,6 +7,8 @@
   "bugs": "https://github.com/liujilongObject/mcp-host-use/issues",
   "description": "A simple and easy-to-use MCP Host CLI Tool.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

@@ -5,6 +5,7 @@ import { signatureMiddleware } from './middleware/signatureMiddleware';
 import OpenAI from "openai";
 
 import 'dotenv/config'
+// import { MCPConnectionManager } from '@mcp-synergy/mcp-host/dist/types/host';
 
 
 const openai = new OpenAI({
@@ -51,6 +52,7 @@ const toolsCall = async ({
   toolName: string;
   toolArgs: any;
 }) => {
+
   return fetch('http://localhost:17925/api/tools/toolCall', {
     method: 'Post',
     headers: {
@@ -94,9 +96,6 @@ app.post('/message', async (req, res) => {
       return pre;
     }, [])
 
-    // console.log("availableTools", availableTools);
-
-
     const response = await openai.chat.completions.create({
       messages: messages || [{ role: "system", content: "You are a helpful assistant." }],
       model: "deepseek-chat",
@@ -129,13 +128,6 @@ app.post('/message', async (req, res) => {
         toolName: functionName,
         toolArgs,
       }) as any
-
-      // console.log("res", res);
-
-      // @ts-ignore
-      // const res_ = res
-      // @ts-ignore
-      console.log("success", res, res.data.content);
       const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`, **result**:\n`
       const aiOutput = res.data.meta?.aiOutput?.type === 'text' ? res.data.meta?.aiOutput?.content || '' : ''
       meta = {
