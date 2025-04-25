@@ -7,6 +7,7 @@
   "scripts": {
     "dev:host": "cd packages/mcp-host && pnpm dev",
     "start:host": "cd packages/mcp-host && pnpm start",
+    "dev:express": "cd servers/express && pnpm dev",
     "start:express": "cd servers/express && pnpm start",
     "build:mcpServers": "cd servers/mcpServers && pnpm build"
   },
@@ -19,6 +20,7 @@
     "dotenv": "^16.5.0",
     "openai": "^4.95.1",
     "rimraf": "^6.0.1",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
 }
