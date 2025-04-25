@@ -1,3 +1,4 @@
 packages:
   - servers/**/*
   - packages/**/*
+  - mcp-host

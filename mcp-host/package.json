@@ -1,0 +1,58 @@
+{
+  "name": "mcp-host",
+  "version": "0.0.1",
+  "author": "liu4426350@qq.com",
+  "license": "MIT",
+  "homepage": "https://github.com/liujilongObject/mcp-host-use",
+  "bugs": "https://github.com/liujilongObject/mcp-host-use/issues",
+  "description": "A simple and easy-to-use MCP Host CLI Tool.",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "bin": {
+    "mcp-host-use": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "format": "prettier --write \"src/**/*.{js,ts,mjs}\"",
+    "build": "npm run format && shx rm -rf dist && rollup -c --environment BUILD:production && shx chmod 755 dist/*.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "MCP",
+    "MCP Host",
+    "MCP Client",
+    "MCP Server",
+    "MCP Host CLI"
+  ],
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "cors": "^2.8.5",
+    "express": "^5.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "prettier": "^3.5.3",
+    "rollup": "^4.35.0",
+    "shx": "^0.3.4",
+    "tslib": "^2.8.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
