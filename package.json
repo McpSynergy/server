@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start:host": "cd mcp-host && pnpm dev",
     "start:express": "cd servers/express && pnpm start",
     "demo:mcp": "cd examples/demo-mcp-server && pnpm build"
   },
