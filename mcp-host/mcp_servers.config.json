@@ -54,7 +54,7 @@
             "server_name": "mcp-component-render",
             "command": "node",
             "args": [
-                "/Users/yangjie/WebCode/npm库/mcps/server/examples/demo-mcp-server/dist/index.js"
+                "../examples/demo-mcp-server/dist/index.js"
             ]
         }
     ]
