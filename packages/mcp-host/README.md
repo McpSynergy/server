@@ -127,124 +127,87 @@ mcp-host-use/
 
 ### 1. 获取所有工具列表
 
-```bash
-GET http://localhost:17925/api/tools
-```
-
-#### 响应
-```json
-{
-  "code": 0,
-  "data": [
-    {
-      "server_name": "服务器1",
-      "tools": [
-        {
-          "name": "工具名称",
-          "description": "工具描述",
-          "inputSchema": { ... }
-        }
-      ]
-    }
-  ]
-}
+```typescript
+// 获取所有可用工具列表
+const toolsList = await connectionActions.getTools()
+// 返回结果示例：
+[
+  {
+    server_name: "服务器1",
+    tools: [
+      {
+        name: "工具名称",
+        description: "工具描述",
+        inputSchema: { ... }
+      }
+    ]
+  }
+]
 ```
 
 ### 2. 调用工具
 
-```bash
-POST http://localhost:17925/api/tools/toolCall
-Content-Type: application/json
-
-{
-  "server_name": "服务器名称",
-  "tool_name": "工具名称",
-  "tool_args": { ... }
-}
-```
-
-#### 响应
-
-```json
-{
-  "code": 0,
-  "data": {
-    "result": "工具执行结果"
-  }
-}
+```typescript
+// 调用指定服务器上的工具
+const result = await connectionActions.toolCall({
+  serverName: "服务器名称",
+  toolName: "工具名称",
+  toolArgs: { ... }
+})
+// 返回工具执行结果
 ```
 
 ## Resources
 
 ### 1. 获取所有资源列表
 
-```bash
-GET http://localhost:17925/api/resources
-```
-
-#### 响应
-```json
-{
-  "code": 0,
-  "data": [
-    {
-      "server_name": "服务器1",
-      "resources": [
-        {
-          "uri": "资源URI",
-          "mimeType": "资源类型",
-          "name": "资源名称"
-        }
-      ]
-    }
-  ]
-}
+```typescript
+// 获取所有可用资源列表
+const resourcesList = await connectionActions.getResources()
+// 返回结果示例：
+[
+  {
+    server_name: "服务器1",
+    resources: [
+      {
+        uri: "资源URI",
+        mimeType: "资源类型",
+        name: "资源名称"
+      }
+    ]
+  }
+]
 ```
 
 ### 2. 读取特定资源
 
-```bash
-POST http://localhost:17925/api/resources/read
-Content-Type: application/json
-
-{
-  "server_name": "服务器名称",
-  "resource_uri": "资源URI"
-}
+```typescript
+// 读取指定服务器上的资源
+const resource = await connectionActions.readResource({
+  serverName: "服务器名称",
+  resourceUri: "资源URI"
+})
+// 返回结果示例：
+[
+  {
+    mimeType: "资源类型",
+    text: "text 类型资源",
+    blob: "blob 类型资源"
+  }
+]
 ```
-
-#### 响应
-
-```json
-{
-  "code": 0,
-  "data":  [
-      {
-        "mimeType": "资源类型",
-        "text": "text 类型资源",
-        "blob": "blob 类型资源"
-      }
-    ]
-}
-```
-
 
 ## Connections
 
 ### 1. 更新 Server 连接
 
-> **调用该 API 后，Host 会主动读取配置文件，并根据更新的配置来 新建/重启/删除 Server 连接。无需重启 Host 服务，继续调用 `/api/tools` 等 API 可以获取更新后的 Server 信息。**
+> **调用该方法后，Host 会主动读取配置文件，并根据更新的配置来 新建/重启/删除 Server 连接。无需重启 Host 服务，继续调用其他方法可以获取更新后的 Server 信息。**
 
-
-```bash
-POST http://localhost:17925/api/connections/update
-Content-Type: application/json
-
+```typescript
+// 更新服务器连接
+await connectionActions.updateConnections()
+// 成功更新服务器连接
 ```
-
-#### 响应
-```json
-{"code":0,"message":"成功更新服务器连接"}
 ```
 
 ## License

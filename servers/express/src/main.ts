@@ -5,9 +5,9 @@ import OpenAI from "openai";
 
 import 'dotenv/config'
 
-import { init, connectionActions } from '@mcp-synergy/mcp-host'
+import { initialization, connectionActions } from '@mcp-synergy/mcp-host'
 
-const connectionManager = init();
+initialization();
 
 const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com',
@@ -31,7 +31,7 @@ app.post('/message', async (req, res) => {
     const { messages } = req.body;
 
     // 获取可用工具列表
-    const tools = await connectionActions.getTools(connectionManager)
+    const tools = await connectionActions.getTools()
 
     // @ts-ignore
     const toolsList = (tools ?? []) as any[];
@@ -84,7 +84,6 @@ app.post('/message', async (req, res) => {
       console.log("toolArgs", toolArgs);
 
       const res = await connectionActions.toolCall({
-        manager: connectionManager,
         serverName,
         toolName: functionName,
         // @ts-ignore

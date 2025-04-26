@@ -121,104 +121,75 @@ mcp-host-use/
 
 ### 1. Get All Tools List
 
-```bash
-GET http://localhost:17925/api/tools
+```typescript
+import { MCPConnectionManager } from '@modelcontextprotocol/mcp-host'
+
+const toolsOfServers = await getTools(manager: MCPConnectionManager)
 ```
 
 #### Response
-```json
-{
-  "code": 0,
-  "data": [
-    {
-      "server_name": "Server1",
-      "tools": [
-        {
-          "name": "Tool Name",
-          "description": "Tool Description",
-          "inputSchema": { ... }
-        }
-      ]
-    }
-  ]
-}
+```typescript
+type ToolsResponse = {
+  server_name: string
+  tools: {
+    name: string
+    description: string
+    inputSchema: object
+  }[]
+}[]
 ```
 
 ### 2. Invoke Tool
 
-```bash
-POST http://localhost:17925/api/tools/toolCall
-Content-Type: application/json
-
-{
-  "server_name": "Server Name",
-  "tool_name": "Tool Name",
-  "tool_args": { ... }
-}
-```
-
-#### Response
-
-```json
-{
-  "code": 0,
-  "data": {
-    "result": "Tool Execution Result"
+```typescript
+const result = await toolCall(
+  manager: MCPConnectionManager,
+  {
+    serverName: string,
+    toolName: string,
+    toolArgs: Record<string, unknown>
   }
-}
+)
 ```
 
 ## Resources
 
 ### 1. Get All Resources List
 
-```bash
-GET http://localhost:17925/api/resources
+```typescript
+const resourcesOfServers = await getResources(manager: MCPConnectionManager)
 ```
 
 #### Response
-```json
-{
-  "code": 0,
-  "data": [
-    {
-      "server_name": "Server1",
-      "resources": [
-        {
-          "uri": "Resource URI",
-          "mimeType": "Resource Type",
-          "name": "Resource Name"
-        }
-      ]
-    }
-  ]
-}
+```typescript
+type ResourcesResponse = {
+  server_name: string
+  resources: {
+    uri: string
+    mimeType: string
+    name: string
+  }[]
+}[]
 ```
 
 ### 2. Read Specific Resource
 
-```bash
-POST http://localhost:17925/api/resources/read
-Content-Type: application/json
-
-{
-  "server_name": "Server Name",
-  "resource_uri": "Resource URI"
-}
+```typescript
+const resource = await readResource(
+  manager: MCPConnectionManager,
+  {
+    serverName: string,
+    resourceUri: string
+  }
+)
 ```
 
 #### Response
-
-```json
-{
-  "code": 0,
-  "data":  [
-      {
-        "mimeType": "Resource Type",
-        "text": "Text type resource",
-        "blob": "Blob type resource"
-      }
-    ]
+```typescript
+type ResourceResponse = {
+  mimeType: string
+  text?: string
+  blob?: Blob
 }
 ```
 
@@ -226,16 +197,11 @@ Content-Type: application/json
 
 ### 1. Update Server Connection
 
-> **After calling this API, the Host will actively read the configuration file and create/restart/delete Server connections based on the updated configuration. No need to restart the Host service, continue calling `/api/tools` and other APIs to get the updated Server information.**
+> **After calling this method, the Host will actively read the configuration file and create/restart/delete Server connections based on the updated configuration. No need to restart the Host service, continue using other methods to get the updated Server information.**
 
-```bash
-POST http://localhost:17925/api/connections/update
-Content-Type: application/json
+```typescript
+await manager.refreshConnections()
 ```
-
-#### Response
-```json
-{"code":0,"message":"Successfully updated server connections"}
 ```
 
 ## License
