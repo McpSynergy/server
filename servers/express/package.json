@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mcp-synergy/mcp-host": "workspace:*",
+    "@mcp-synergy/host": "workspace:*",
     "express": "^5.1.0",
     "pkce-challenge": "^5.0.0"
   },

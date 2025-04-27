@@ -6,6 +6,7 @@ import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.j
 import { MCPClientConfig } from './types.js'
 import { z } from 'zod'
 import { getSystemNpxPath, getSystemUvxPath, isWin32 } from './utils.js'
+import { logClient, errorClient } from './colors.js'
 
 export class MCPClient {
   private mcpClient: Client
@@ -32,7 +33,7 @@ export class MCPClient {
     )
 
     this.mcpClient.onclose = () => {
-      console.log('[MCP Client] mcp client close')
+      logClient('mcp client close')
     }
   }
 
@@ -176,7 +177,7 @@ export class MCPClient {
           const stdioServerConfig = await this.generateCallStdioServerCommand(
             this.clientConfig.serverConfig
           )
-          console.log('[MCP Client] stdioServerConfig', JSON.stringify(stdioServerConfig, null, 2))
+          logClient(`stdioServerConfig ${JSON.stringify(stdioServerConfig, null, 2)}`)
           this.clientConfig = {
             transportType: 'stdio',
             serverConfig: stdioServerConfig,
@@ -190,7 +191,7 @@ export class MCPClient {
         // (connect 初始化后，transport 被赋值; connectPromise 执行后，transport 被重置为 undefined)
         if (this.transport instanceof StdioClientTransport) {
           this.transport.stderr?.on('data', (chunk) => {
-            console.log('[MCP Client] 连接服务器 StdioClientTransport stderr:', chunk.toString())
+            logClient(`连接服务器 StdioClientTransport stderr: ${chunk.toString()}`)
           })
         }
 
@@ -199,7 +200,7 @@ export class MCPClient {
         return
       } catch (error) {
         retries++
-        console.log(`[MCP Client] 连接服务器失败，剩余重试次数: ${maxRetries - retries}`)
+        logClient(`连接服务器失败，剩余重试次数: ${maxRetries - retries}`)
         // 如果已达到最大重试次数，则抛出错误
         if (retries >= maxRetries) {
           throw error
@@ -279,7 +280,7 @@ export class MCPClient {
     } catch (error) {
       // 连接错误，尝试重连
       if (error instanceof McpError && error?.code === -32000) {
-        console.log('[MCP Client] 检测到连接失败，尝试重新连接')
+        logClient('检测到连接失败，尝试重新连接')
         await this.reconnect()
         // 重新调用工具
         return await this.callTool(callToolParams, callToolOptions)
@@ -297,10 +298,10 @@ export class MCPClient {
       await this.cleanup()
       // 重新连接服务器
       await this.connectToServer()
-      console.log('[MCP Client] 重新连接服务器成功')
+      logClient('重新连接服务器成功')
       return true
     } catch (error) {
-      console.error('[MCP Client] 重新连接服务器失败', error)
+      errorClient('重新连接服务器失败', error)
       throw error
     }
   }

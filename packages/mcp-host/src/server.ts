@@ -2,7 +2,8 @@ import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import type { MCPClient } from './client.js'
 import type { MCPConnectionManager } from './host.js'
-import { withTimeoutPromise, getServerConfig } from './utils.js'
+import { withTimeoutPromise } from './utils.js'
+import { logServer, errorServer } from './colors.js'
 
 const app = express()
 
@@ -115,7 +116,7 @@ app.post(
       }
 
       // 获取最新的服务器配置
-      const serverConfigs = await getServerConfig()
+      const serverConfigs = await connectionManager?.getServerConfig()
       const serverConfig = serverConfigs?.find((c) => c.server_name === server_name)
       // 服务器配置不存在
       if (!serverConfig) {
@@ -283,8 +284,8 @@ app.post(
         installPromise = (async () => {
           try {
             // 获取服务器配置
-            const serverConfigs = await getServerConfig()
-            const config = serverConfigs.find((c) => c.server_name === server_name)
+            const serverConfigs = await connectionManager?.getServerConfig()
+            const config = serverConfigs?.find((c) => c.server_name === server_name)
 
             // 配置不存在
             if (!config) {
@@ -392,11 +393,11 @@ export function createHostServer(manager: MCPConnectionManager) {
   return new Promise<void>((resolve) => {
     app
       .listen(PORT, () => {
-        console.log(`[MCP Host Server] running on: http://localhost:${PORT} \n`)
+        logServer(`running on: http://localhost:${PORT} \n`)
         resolve()
       })
       .on('error', (error) => {
-        console.error('[MCP Host Server] 启动失败:', error)
+        errorServer('启动失败:', error)
         process.exit(1)
       })
   })

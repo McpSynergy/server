@@ -2,6 +2,8 @@ import { MCPClient } from './client.js'
 import { MCPClientConfig, MCPConnectionStatus, MCPServerConfig } from './types.js'
 import { convertToClientConfig, getServerConfig } from './utils.js'
 import { isDeepStrictEqual } from 'node:util'
+import chokidar, { FSWatcher } from 'chokidar'
+import { logHost, errorHost } from './colors.js'
 
 export class MCPConnectionManager {
   private connections = new Map<string, MCPClient>()
@@ -13,24 +15,50 @@ export class MCPConnectionManager {
   // 存储连接请求
   private connectionPromises = new Map<string, Promise<MCPClient>>()
 
+  private configPath: string
+
+  private watcher?: FSWatcher
+  constructor(options: { configPath: string; dev?: boolean }) {
+    const { dev = process.env.NODE_ENV === 'development', configPath } = options
+    this.configPath = configPath
+    logHost(`dev: ${dev}`)
+
+    if (dev) {
+      this.watcher = chokidar.watch(this.configPath, {
+        persistent: true,
+      })
+      logHost(`Watching config file <${configPath}> for changes...`)
+
+      this.watcher.on('change', async (path) => {
+        logHost(`Config file <${path}> has changed, updating connections...`)
+        await this.refreshConnections()
+        logHost('Connections updated successfully')
+      })
+    }
+    this.start()
+  }
   // 启动连接管理器
   async start(): Promise<void> {
     await this.refreshConnections()
+  }
+
+  async getServerConfig(): Promise<MCPServerConfig[]> {
+    return getServerConfig(this.configPath)
   }
 
   // 更新所有连接
   async refreshConnections(): Promise<void> {
     // 防止并发执行
     if (this.refreshInProgress) {
-      console.log('[MCP Host] 已有更新连接操作在进行中，跳过本次刷新')
+      logHost('Connection update operation in progress, skipping refresh')
       return
     }
     this.refreshInProgress = true
 
     try {
-      const mcpServerList = await getServerConfig()
+      const mcpServerList = await this.getServerConfig()
       if (!mcpServerList?.length) {
-        console.warn('[MCP Host] 服务器配置为空')
+        logHost('Config file is empty, skipping refresh')
         return
       }
 
@@ -46,7 +74,7 @@ export class MCPConnectionManager {
           // 服务已从配置中移除
           await this.removeConnection(serverName)
           newConfigMap.delete(serverName)
-          console.log(`[MCP Host] 服务器 <${serverName}> 已移除，连接已断开`)
+          logHost(`Server <${serverName}> has been removed, connection disconnected`)
         } else if (
           !newConfigMap.get(serverName)?.enabled &&
           this.configCache.get(serverName)?.enabled
@@ -54,7 +82,7 @@ export class MCPConnectionManager {
           // 服务由启用变为禁用
           await this.removeConnection(serverName)
           newConfigMap.delete(serverName)
-          console.log(`[MCP Host] 服务器 <${serverName}> 已禁用，连接已断开`)
+          logHost(`Server <${serverName}> has been disabled, connection disconnected`)
         }
       }
 
@@ -70,11 +98,11 @@ export class MCPConnectionManager {
             } else if (this.configNeedsUpdate(oldConfig, newConfig)) {
               // 配置已变更，需要重启连接
               await this.restartConnection(serverName, newConfig)
-              console.log(`[MCP Host] 服务器 <${serverName}> 连接已重启`)
+              logHost(`Server <${serverName}> connection has been restarted`)
             }
           } catch (error) {
-            console.error(
-              `[MCP Host] 处理服务器 <${serverName}> 连接时出错, 继续处理其他服务器:`,
+            errorHost(
+              `Error processing server <${serverName}> connection, continuing with other servers:`,
               error
             )
           }
@@ -87,7 +115,7 @@ export class MCPConnectionManager {
         this.configCache.set(serverName, { ...config })
       }
     } catch (error) {
-      console.error('[MCP Host] 更新连接失败:', error)
+      errorHost('Failed to update connections:', error)
     } finally {
       this.refreshInProgress = false
     }
@@ -98,7 +126,7 @@ export class MCPConnectionManager {
     // 检查是否已有正在进行的连接请求
     const existingPromise = this.connectionPromises.get(serverName)
     if (existingPromise) {
-      console.log(`[MCP Host] 服务器 <${serverName}> 连接正在建立中，等待连接完成`)
+      logHost(`Server <${serverName}> connection is being established, waiting for completion`)
       return existingPromise
     }
 
@@ -110,11 +138,11 @@ export class MCPConnectionManager {
         await client.connectToServer()
         this.connections.set(serverName, client)
         this.connectionStatus.set(serverName, 'connected')
-        console.log(`[MCP Host] 服务器 <${serverName}> 连接成功 \n`)
+        logHost(`Server <${serverName}> connection successful`)
         return client
       } catch (error) {
         this.connectionStatus.set(serverName, 'error')
-        console.error(`[MCP Host] 服务器 <${serverName}> 连接失败:`, error, '\n')
+        errorHost(`Server <${serverName}> connection failed:`, error)
         throw error
       } finally {
         // 清理 Promise 缓存
@@ -149,9 +177,9 @@ export class MCPConnectionManager {
         await client.cleanup()
         this.connections.delete(serverName)
         this.connectionStatus.set(serverName, 'disconnected')
-        console.log(`[MCP Host] 移除服务器 <${serverName}> 连接成功`)
+        logHost(`Successfully removed server <${serverName}> connection`)
       } catch (error) {
-        console.error(`[MCP Host] 移除服务器 <${serverName}> 连接失败:`, error)
+        errorHost(`Failed to remove server <${serverName}> connection:`, error)
         throw error
       }
     }
@@ -184,11 +212,11 @@ export class MCPConnectionManager {
   closeAllConnections() {
     Promise.all(this.getAllServers().map((serverName) => this.removeConnection(serverName)))
       .then(() => {
-        console.log('[MCP Host] 所有连接已关闭')
+        logHost('All connections have been closed')
         this.connections.clear()
       })
       .catch((error) => {
-        console.error('[MCP Host] 关闭所有连接失败:', error)
+        errorHost('Failed to close all connections:', error)
         throw error
       })
   }

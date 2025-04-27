@@ -5,9 +5,11 @@ import OpenAI from "openai";
 
 import 'dotenv/config'
 
-import { initialization, connectionActions } from '@mcp-synergy/mcp-host'
+import mcpHost from '@mcp-synergy/host'
 
-initialization();
+
+mcpHost.initialization("./mcp_servers.config.json", true);
+
 
 const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com',
@@ -31,7 +33,7 @@ app.post('/message', async (req, res) => {
     const { messages } = req.body;
 
     // 获取可用工具列表
-    const tools = await connectionActions.getTools()
+    const tools = await mcpHost.getTools()
 
     // @ts-ignore
     const toolsList = (tools ?? []) as any[];
@@ -83,7 +85,7 @@ app.post('/message', async (req, res) => {
       console.log("functionName", functionName);
       console.log("toolArgs", toolArgs);
 
-      const res = await connectionActions.toolCall({
+      const res = await mcpHost.toolCall({
         serverName,
         toolName: functionName,
         // @ts-ignore
@@ -120,6 +122,10 @@ ${JSON.stringify(res.content, null, 2)}
   }
 });
 
-app.listen(port, () => {
+app.listen(port, (error) => {
+  if (error) {
+    console.error('Error starting server:', error);
+    return;
+  }
   console.log(`Server running at http://localhost:${port}`);
 });

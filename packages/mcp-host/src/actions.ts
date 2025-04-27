@@ -1,5 +1,5 @@
 import { MCPConnectionManager } from './host'
-import { getServerConfig, withTimeoutPromise } from './utils'
+import { withTimeoutPromise } from './utils'
 
 // 添加服务器安装锁
 const serverInstallLocks = new Map<string, Promise<any>>()
@@ -66,7 +66,7 @@ export const toolsBatch = async (manager: MCPConnectionManager, serverNames: str
       return { server_name, client, status: 'success' }
     }
     // 获取最新的服务器配置
-    const serverConfigs = await getServerConfig()
+    const serverConfigs = await manager?.getServerConfig()
     const serverConfig = serverConfigs?.find((c) => c.server_name === server_name)
     // 服务器配置不存在
     if (!serverConfig) {
@@ -194,7 +194,7 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
       installPromise = (async () => {
         try {
           // 获取服务器配置
-          const serverConfigs = await getServerConfig()
+          const serverConfigs = await manager?.getServerConfig()
           const config = serverConfigs.find((c) => c.server_name === server_name)
 
           // 配置不存在

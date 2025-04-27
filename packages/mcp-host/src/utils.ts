@@ -22,15 +22,15 @@ export function isWin32() {
 }
 
 // 获取服务器配置
-const SERVER_CONFIG_PATH = join(process.cwd(), 'mcp_servers.config.json')
+// const SERVER_CONFIG_PATH = join(process.cwd(), 'mcp_servers.config.json')
 
-export async function getServerConfig(): Promise<MCPServerConfig[]> {
+export async function getServerConfig(path: string): Promise<MCPServerConfig[]> {
   try {
-    if (existsSync(SERVER_CONFIG_PATH)) {
-      const config = readFileSync(SERVER_CONFIG_PATH, 'utf-8')
+    if (existsSync(path)) {
+      const config = readFileSync(path, 'utf-8')
       return JSON.parse(config)?.mcp_servers ?? []
     }
-    throw new Error(`不存在服务器配置文件: ${SERVER_CONFIG_PATH}`)
+    throw new Error(`不存在服务器配置文件: ${path}`)
   } catch (error) {
     throw error
   }

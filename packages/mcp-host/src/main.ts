@@ -2,13 +2,16 @@
 
 import { MCPConnectionManager } from './host.js'
 import { createHostServer } from './server.js'
+import { logHost, errorHost } from './colors.js'
 
 let connectionManager: MCPConnectionManager | null = null
 
 async function main() {
   try {
     // 创建连接管理器
-    connectionManager = new MCPConnectionManager()
+    connectionManager = new MCPConnectionManager({
+      configPath: './mcp_servers.config.json',
+    })
 
     // 创建并启动 Host 服务器
     await createHostServer(connectionManager)
@@ -20,13 +23,13 @@ async function main() {
     process.on('SIGINT', cleanup)
     process.on('SIGTERM', cleanup)
   } catch (error) {
-    console.error('[MCP Host] 启动失败', error)
+    errorHost('启动失败', error)
     process.exit(1)
   }
 }
 
 async function cleanup() {
-  console.log('[MCP Host] 正在关闭服务...')
+  logHost('正在关闭服务...')
   if (connectionManager) {
     await connectionManager.stop()
   }
