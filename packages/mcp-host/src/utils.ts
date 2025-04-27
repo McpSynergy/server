@@ -1,8 +1,8 @@
 import { MCPClientConfig, MCPServerConfig } from './types.js'
-import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { platform } from 'node:process'
+import { errorHost } from './colors.js'
 
 export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientConfig {
   return {
@@ -60,7 +60,7 @@ export function getSystemNpxPath() {
     const npxPath = execSync(command, { encoding: 'utf-8' }).trim()
     return npxPath
   } catch (error) {
-    console.log('[MCP Host] Failed to get system npx path:', error)
+    errorHost('Failed to get system npx path', error)
     return 'npx'
   }
 }
@@ -93,11 +93,11 @@ export async function withTimeoutPromise<T>(
     promise,
     new Promise<T>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(`操作超时 (${timeoutMs}ms)`))
+        reject(new Error(`Operation timeout (${timeoutMs}ms)`))
       }, timeoutMs)
     }),
   ]).catch((err) => {
-    console.error(`[withTimeoutPromise] Promise执行失败: ${err.message}`)
+    console.error(`[withTimeoutPromise] Promise execution failed: ${err.message}`)
     return fallbackValue as T
   })
 }
