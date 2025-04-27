@@ -9,21 +9,6 @@ import {
 } from './actions'
 import { MCPConnectionManager } from './host'
 
-let connectionManager: MCPConnectionManager | null = null
-const initialization = (configPath: string, dev?: boolean) => {
-  connectionManager = new MCPConnectionManager({
-    configPath,
-    dev,
-  })
-  connectionManager.start()
-  return connectionManager
-}
-
-const shutdown = () => {
-  connectionManager?.stop()
-  connectionManager = null
-}
-
 const withAction =
   <T extends (first: any, ...args: any[]) => any>(
     action: T,
@@ -35,19 +20,6 @@ const withAction =
     }
     return action(manager, ...args)
   }
-
-const mcpHost = {
-  initialization,
-  shutdown,
-  getTools: withAction(getTools, connectionManager),
-  toolCall: withAction(toolCall, connectionManager),
-  toolsBatch: withAction(toolsBatch, connectionManager),
-  getResources: withAction(getResources, connectionManager),
-  readResource: withAction(readResource, connectionManager),
-  updateConnections: withAction(updateConnections, connectionManager),
-  batchInstallServer: withAction(batchInstallServer, connectionManager),
-  uninstallServer: withAction(batchInstallServer, connectionManager),
-}
 
 export class MCPHost {
   private static instance: MCPHost
@@ -73,5 +45,3 @@ export class MCPHost {
   batchInstallServer = withAction(batchInstallServer, this.connectionManager)
   uninstallServer = withAction(batchInstallServer, this.connectionManager)
 }
-
-export default mcpHost
