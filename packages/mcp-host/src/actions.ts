@@ -1,7 +1,7 @@
 import { MCPConnectionManager } from './host'
 import { withTimeoutPromise } from './utils'
 
-// 添加服务器安装锁
+// Add server installation lock
 const serverInstallLocks = new Map<string, Promise<any>>()
 
 export const getTools = async (manager: MCPConnectionManager) => {
@@ -15,8 +15,8 @@ export const getTools = async (manager: MCPConnectionManager) => {
           server_name,
           tools,
         })),
-        5000, // 5秒超时
-        { server_name, tools: [] } // 超时返回空工具列表
+        5000, // 5 seconds timeout
+        { server_name, tools: [] } // Return empty tool list on timeout
       )
     )
   }
@@ -51,24 +51,24 @@ export const toolCall = async (
 }
 
 export const toolsBatch = async (manager: MCPConnectionManager, serverNames: string[]) => {
-  // 验证参数
+  // Validate parameters
   if (!Array.isArray(serverNames) || !serverNames.length) {
     return null
   }
 
   const getActiveMcpConnections = () => manager.getAllConnections()
-  // 并行处理所有服务器连接
+  // Process all server connections in parallel
   const connectionPromises = serverNames.map(async (server_name) => {
     let client = getActiveMcpConnections().get(server_name)
 
-    // 已有连接，直接复用
+    // Reuse existing connection
     if (client) {
       return { server_name, client, status: 'success' }
     }
-    // 获取最新的服务器配置
+    // Get latest server configuration
     const serverConfigs = await manager?.getServerConfig()
     const serverConfig = serverConfigs?.find((c) => c.server_name === server_name)
-    // 服务器配置不存在
+    // Server configuration not found
     if (!serverConfig) {
       return {
         server_name,
@@ -78,7 +78,7 @@ export const toolsBatch = async (manager: MCPConnectionManager, serverNames: str
       }
     }
 
-    // 服务器已禁用
+    // Server is disabled
     if (!serverConfig.enabled) {
       return {
         server_name,
@@ -88,23 +88,23 @@ export const toolsBatch = async (manager: MCPConnectionManager, serverNames: str
       }
     }
 
-    // 尝试建立连接
+    // Try to establish connection
     try {
       client = await manager?.restartConnection(server_name, serverConfig)
       return { server_name, client, status: 'success' }
     } catch (error) {
-      console.error(`创建服务器${server_name}连接失败:`, error)
+      console.error(`Failed to create server connection ${server_name}:`, error)
       return {
         server_name,
         client: null,
         status: 'error',
-        error: `连接失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       }
     }
   })
-  // 等待所有连接处理完成
+  // Wait for all connection processes to complete
   const connectionResults = await Promise.all(connectionPromises)
-  // 并行获取工具
+  // Get tools in parallel
   const toolPromises = connectionResults.map((result) => {
     if (result.status === 'error' || !result.client) {
       return Promise.resolve({
@@ -113,18 +113,18 @@ export const toolsBatch = async (manager: MCPConnectionManager, serverNames: str
       })
     }
 
-    // 有可用连接时，获取工具并设置超时
+    // When connection is available, get tools with timeout
     return withTimeoutPromise(
       result.client.listTools().then((tools) => ({
         server_name: result.server_name,
         tools,
       })),
-      5000, // 5秒超时
-      { server_name: result.server_name, tools: [] } // 超时返回空工具列表
+      5000, // 5 seconds timeout
+      { server_name: result.server_name, tools: [] } // Return empty tool list on timeout
     )
   })
   const toolsResults = await Promise.all(toolPromises)
-  // 过滤掉空工具列表
+  // Filter out empty tool lists
   const filteredToolsResults = toolsResults.filter((item) => item.tools.length > 0)
   return filteredToolsResults
 }
@@ -164,7 +164,7 @@ export const updateConnections = async (manager: MCPConnectionManager) => {
     await manager?.refreshConnections()
     return true
   } catch (error) {
-    console.error('uodate error:', error)
+    console.error('Update error:', error)
     return false
   }
 }
@@ -175,9 +175,9 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
     return null
   }
 
-  // 并行处理每个服务器的安装
+  // Process each server installation in parallel
   const installPromises = serverNames.map(async (server_name) => {
-    // 检查服务器是否已存在连接
+    // Check if server connection already exists
     const existingClient = getActiveMcpConnections().get(server_name)
     if (existingClient) {
       return {
@@ -187,17 +187,17 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
       }
     }
 
-    // 使用锁确保同一服务器不会被并发安装
+    // Use lock to ensure the same server won't be installed concurrently
     let installPromise = serverInstallLocks.get(server_name)
     if (!installPromise) {
-      // 创建新的安装任务
+      // Create new installation task
       installPromise = (async () => {
         try {
-          // 获取服务器配置
+          // Get server configuration
           const serverConfigs = await manager?.getServerConfig()
           const config = serverConfigs.find((c) => c.server_name === server_name)
 
-          // 配置不存在
+          // Configuration not found
           if (!config) {
             return {
               server_name,
@@ -206,7 +206,7 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
             }
           }
 
-          // 服务已下线
+          // Server is offline
           if (!config.enabled) {
             return {
               server_name,
@@ -215,7 +215,7 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
             }
           }
 
-          // 创建新连接
+          // Create new connection
           await manager?.restartConnection(server_name, config)
 
           return {
@@ -224,14 +224,14 @@ export const batchInstallServer = async (manager: MCPConnectionManager, serverNa
             msg: 'Server installed successfully',
           }
         } catch (error) {
-          console.error('安装服务器失败:', error)
+          console.error('Server installation failed:', error)
           return {
             server_name,
             installed: false,
-            msg: `安装服务器失败: ${error instanceof Error ? error.message : '未知错误'}`,
+            msg: `Server installation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           }
         } finally {
-          // 无论成功失败，都要释放锁
+          // Release lock regardless of success or failure
           serverInstallLocks.delete(server_name)
         }
       })()
