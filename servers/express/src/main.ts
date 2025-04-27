@@ -5,10 +5,10 @@ import OpenAI from "openai";
 
 import 'dotenv/config'
 
-import mcpHost from '@mcp-synergy/host'
+import { MCPHost } from '@mcp-synergy/host'
 
 
-mcpHost.initialization("./mcp_servers.config.json", true);
+const mcpHost = new MCPHost("./mcp_servers.config.json", true);
 
 
 const openai = new OpenAI({

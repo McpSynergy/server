@@ -29,12 +29,12 @@ const withAction =
     action: T,
     manager: MCPConnectionManager | null
   ) =>
-    (...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never): ReturnType<T> | null => {
-      if (!manager) {
-        return null
-      }
-      return action(manager, ...args)
+  (...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never): ReturnType<T> | null => {
+    if (!manager) {
+      return null
     }
+    return action(manager, ...args)
+  }
 
 const mcpHost = {
   initialization,
@@ -48,7 +48,6 @@ const mcpHost = {
   batchInstallServer: withAction(batchInstallServer, connectionManager),
   uninstallServer: withAction(batchInstallServer, connectionManager),
 }
-
 
 export class MCPHost {
   private static instance: MCPHost
