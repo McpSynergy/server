@@ -14,12 +14,18 @@ const withAction =
     action: T,
     manager: MCPConnectionManager | null
   ) =>
-    (...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never): ReturnType<T> | null => {
-      if (!manager) {
-        return null
-      }
-      return action(manager, ...args)
+  (
+    ...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never
+  ):
+    | (ReturnType<T> & {
+        meta: Record<string, any>
+      })
+    | null => {
+    if (!manager) {
+      return null
     }
+    return action(manager, ...args)
+  }
 
 export class MCPHost {
   private connectionManager: MCPConnectionManager | null = null

@@ -177,7 +177,7 @@ export class MCPClient {
           const stdioServerConfig = await this.generateCallStdioServerCommand(
             this.clientConfig.serverConfig
           )
-          logClient(`stdioServerConfig ${JSON.stringify(stdioServerConfig, null, 2)}`);
+          logClient(`stdioServerConfig ${JSON.stringify(stdioServerConfig, null, 2)}`)
           this.clientConfig = {
             transportType: 'stdio',
             serverConfig: stdioServerConfig,

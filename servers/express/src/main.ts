@@ -28,6 +28,12 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+const formatJson = (str: string) => {
+  const json = `\`\`\`json
+${str}
+\`\`\``
+  return json
+}
 app.post('/message', async (req, res) => {
   try {
     const { messages } = req.body;
@@ -36,7 +42,7 @@ app.post('/message', async (req, res) => {
     const tools = await mcpHost.getTools()
 
     // @ts-ignore
-    const toolsList = (tools ?? []) as any[];
+    const toolsList = tools;
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
         // @ts-ignore
@@ -56,7 +62,7 @@ app.post('/message', async (req, res) => {
         })
       }
       return pre;
-    }, [])
+    }, [] as any[])
 
     const response = await openai.chat.completions.create({
       messages: messages || [{ role: "system", content: "You are a helpful assistant." }],
@@ -88,25 +94,22 @@ app.post('/message', async (req, res) => {
       const res = await mcpHost.toolCall({
         serverName,
         toolName: functionName,
-        // @ts-ignore
         toolArgs: JSON.parse(toolArgs),
-      }) as any
-
+      })
+      const apiOutput = res?._meta?.apiOutput as {
+        type: string,
+        content: string,
+      }
       const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`, **result**:\n`
-      const aiOutput = res.meta?.aiOutput?.type === 'text' ? res.meta?.aiOutput?.content || '' : ''
+      const aiOutput = apiOutput?.type === 'text' ? apiOutput?.content || '' : ''
       meta = {
         serverName,
         toolName: functionName,
-        componentProps: res.meta?.props,
+        componentProps: res?._meta?.props,
         aiOutput,
       }
-
-      const json = `\`\`\`json
-${JSON.stringify(res.content, null, 2)}
-\`\`\``
-      responseMessage = `${prefix} ${json}`
+      responseMessage = `${prefix}${formatJson(JSON.stringify(res, null, 2))}`
     }
-
 
     res.write(JSON.stringify({
       code: 0,
