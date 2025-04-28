@@ -9,7 +9,7 @@ const extensions = ['.js', '.ts']
 
 export default defineConfig([
   {
-    input: ['./src/index.ts', './src/main.ts'],
+    input: ['./src/index.ts'],
     output: {
       dir: 'dist',
       format: 'esm',
