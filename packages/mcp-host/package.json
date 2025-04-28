@@ -13,9 +13,6 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "bin": {
-    "mcp-host-use": "./dist/main.js"
-  },
   "scripts": {
     "dev": "tsx src/main.ts",
     "start": "npm run build && node dist/main.js",
