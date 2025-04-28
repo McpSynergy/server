@@ -49,23 +49,43 @@ mcp-host-use/
 
 ## Usage
 
-### 1. Using `npm` package, no local build required (Recommended)
+### 1. Installation
 
-`npx mcp-host-use`
+```bash
+npm install @mcp-synergy/host
+```
 
-### 2. Local build, clone this repository `git clone https://github.com/liujilongObject/mcp-host-use.git`
+### 2. Usage
 
-#### Install dependencies
-- `npm install`
+```typescript
+import { MCPHost } from '@mcp-synergy/host';
 
-#### Development mode
-- `npm run dev`
+// Create MCPHost instance
+// param1: config file path
+// param2: enable config file hot reload (recommended for development mode)
+const mcpHost = new MCPHost('./mcp_servers.config.json', true);
 
-#### Production mode
-- `npm run build`
-  - For production use:
-    - Using custom Node.js environment: `production_node.exe dist/index.js`
-    - Using host machine's Node.js environment: `node dist/index.js`
+// Start service
+await mcpHost.start();
+```
+
+### 3. Local Development
+
+1. Clone repository
+```bash
+git clone <repository_url>
+cd mcp-host
+```
+
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Development mode
+```bash
+npm run dev
+```
 
 ## Servers Configuration File
 
@@ -108,12 +128,12 @@ mcp-host-use/
 ```
 
 ## Notes
-- The server runs on port 17925 by default
-- Ensure server information in the configuration file is correct
 - For STDIO transport method, ensure the following commands are executable:
     - `npx`
     - `uvx`
 - For SSE transport method, ensure the URL is accessible
+- Development mode supports hot reload of configuration files
+- Production environment is recommended to disable configuration file hot reload
 
 ## API Endpoints
 
@@ -122,34 +142,33 @@ mcp-host-use/
 ### 1. Get All Tools List
 
 ```typescript
-import { MCPConnectionManager } from '@modelcontextprotocol/mcp-host'
-
-const toolsOfServers = await getTools(manager: MCPConnectionManager)
-```
-
-#### Response
-```typescript
-type ToolsResponse = {
-  server_name: string
-  tools: {
-    name: string
-    description: string
-    inputSchema: object
-  }[]
-}[]
+// Get all available tools list
+const toolsList = await mcp.getTools()
+// Example response:
+[
+  {
+    server_name: "server1",
+    tools: [
+      {
+        name: "tool name",
+        description: "tool description",
+        inputSchema: { ... }
+      }
+    ]
+  }
+]
 ```
 
 ### 2. Invoke Tool
 
 ```typescript
-const result = await toolCall(
-  manager: MCPConnectionManager,
-  {
-    serverName: string,
-    toolName: string,
-    toolArgs: Record<string, unknown>
-  }
-)
+// Call tool on specified server
+const result = await mcp.toolCall({
+  serverName: "server name",
+  toolName: "tool name",
+  toolArgs: { ... }
+})
+// Returns tool execution result
 ```
 
 ## Resources
@@ -157,39 +176,36 @@ const result = await toolCall(
 ### 1. Get All Resources List
 
 ```typescript
-const resourcesOfServers = await getResources(manager: MCPConnectionManager)
-```
-
-#### Response
-```typescript
-type ResourcesResponse = {
-  server_name: string
-  resources: {
-    uri: string
-    mimeType: string
-    name: string
-  }[]
-}[]
+// Get all available resources list
+const resourcesList = await mcp.getResources()
+// Example response:
+[
+  {
+    server_name: "server1",
+    resources: [
+      {
+        uri: "resource URI",
+        mimeType: "resource MIME type",
+        name: "resource name"
+      }
+    ]
+  }
+]
 ```
 
 ### 2. Read Specific Resource
 
 ```typescript
-const resource = await readResource(
-  manager: MCPConnectionManager,
-  {
-    serverName: string,
-    resourceUri: string
-  }
-)
-```
-
-#### Response
-```typescript
-type ResourceResponse = {
-  mimeType: string
-  text?: string
-  blob?: Blob
+// Read resource from specified server
+const resource = await mcp.readResource({
+  serverName: "server name",
+  resourceUri: "resource URI"
+})
+// Example response:
+{
+  mimeType: "resource MIME type",
+  text: "resource content",
+  blob: Blob
 }
 ```
 
@@ -200,7 +216,8 @@ type ResourceResponse = {
 > **After calling this method, the Host will actively read the configuration file and create/restart/delete Server connections based on the updated configuration. No need to restart the Host service, continue using other methods to get the updated Server information.**
 
 ```typescript
-await manager.refreshConnections()
+// Refresh server connections
+await mcp.refreshConnections()
 ```
 ```
 

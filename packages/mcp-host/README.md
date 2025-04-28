@@ -2,9 +2,9 @@
   中文 | <a href="./README.EN.md">EN</a>
 </p>
 
-# mcp-host-use
+# mcp-host
 
-### mcp-host-use 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。Host 提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。你可以使用它快速测试及运行你的 MCP Servers。
+`mcp-host` 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。它提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。
 
 ## 架构图
 
@@ -21,54 +21,82 @@ graph TD
 ```
 
 ## 主要功能
-- 支持同时连接多个 MCP 服务器, 通过 `json` 文件管理多个 MCP 服务器
-- 支持 STDIO 和 SSE 两种传输方式
-- 提供统一的 HTTP API 接口，用于：
-    - 获取所有服务器的工具列表
-    - 调用特定服务器上的工具
-    - 获取所有服务器的资源列表
-    - 获取特定服务器上的资源
-    - 触发 Host 主动更新 Server 连接
+
+- 多服务器管理：支持同时连接多个 MCP 服务器，通过 `json` 文件统一管理
+- 双传输模式：支持 STDIO 和 SSE 两种传输方式
+- 统一 API 接口：
+  - 获取所有服务器的工具列表
+  - 调用特定服务器上的工具
+  - 获取所有服务器的资源列表
+  - 获取特定服务器上的资源
+  - 触发 Host 主动更新 Server 连接
+- 开发模式支持：支持配置文件热更新，无需重启服务
+- 优雅关闭：支持进程信号处理，确保服务优雅退出
 
 
 ## 项目结构
+
 ```bash
-mcp-host-use/
+mcp-host/
 ├── src/                      # 源代码目录
 │   ├── main.ts               # 主入口文件
 │   ├── host.ts               # MCP 连接管理器
 │   ├── client.ts             # MCP 客户端实现
 │   ├── server.ts             # HTTP 服务器实现
 │   ├── types.ts              # 类型定义
+│   ├── actions.ts            # API 动作处理
+│   ├── colors.ts             # 控制台颜色
+│   ├── logger.ts             # 日志工具
 │   └── utils.ts              # 工具函数
 ```
 
 ## 环境要求
-- **连接 STDIO MCP Server，需要 `npx` 或 `uvx` 的系统运行环境。**
-  - `npx` 依赖 Nodejs (>=18)
+
+- Node.js >= 18
+- 连接 STDIO MCP Server 需要：
+  - `npx` 或 `uvx` 的系统运行环境
   - `uvx` 依赖 Python (uv)
 
 
-## 使用
+## 安装使用
 
-### 1. 使用 `npm` 包，无须本地构建 （推荐）
+### 1. 安装
 
-`npx mcp-host-use`
+```bash
+npm install @mcp-synergy/host
+```
 
+### 2. 使用
 
-### 2. 本地构建，clone 这个仓库 `git clone https://github.com/liujilongObject/mcp-host-use.git`
+```typescript
+import { MCPHost } from '@mcp-synergy/host';
 
-#### 安装依赖
-- `npm install`
+// 创建MCPHost实例
+// 参数1: 配置文件路径
+// 参数2: 是否启用配置文件热更新（开发模式推荐开启）
+const mcpHost = new MCPHost('./mcp_servers.config.json', true);
 
-#### 开发模式
-- `npm run dev`
+// 启动服务
+await mcpHost.start();
+```
 
-#### 生产模式
-- `npm run build`
-  - 生产环境使用
-    - 使用自定义的 Node.js 环境：`production_node.exe dist/index.js`
-    - 使用宿主机的 Node.js 环境：`node dist/index.js`
+### 3. 本地开发
+
+1. 克隆仓库
+```bash
+git clone <repository_url>
+cd mcp-host
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 开发模式
+```bash
+npm run dev
+```
 
 
 ## Servers 配置文件
@@ -113,12 +141,11 @@ mcp-host-use/
 ```
 
 ## 注意事项
-- 服务器默认运行在 17925 端口
-- 确保配置文件中的服务器信息正确
-- 对于 STDIO 传输方式，需要确保以下命令可执行
-    - `npx`
-    - `uvx`
+
+- 对于 STDIO 传输方式，需要确保 `npx` 或 `uvx` 命令可执行
 - 对于 SSE 传输方式，需要确保 URL 可访问
+- 开发模式下支持配置文件热更新
+- 生产环境建议关闭配置文件监听
 
 
 ## API Endpoints
@@ -129,7 +156,7 @@ mcp-host-use/
 
 ```typescript
 // 获取所有可用工具列表
-const toolsList = await connectionActions.getTools()
+const toolsList = await mcp.getTools()
 // 返回结果示例：
 [
   {
@@ -149,7 +176,7 @@ const toolsList = await connectionActions.getTools()
 
 ```typescript
 // 调用指定服务器上的工具
-const result = await connectionActions.toolCall({
+const result = await mcp.toolCall({
   serverName: "服务器名称",
   toolName: "工具名称",
   toolArgs: { ... }
@@ -163,7 +190,7 @@ const result = await connectionActions.toolCall({
 
 ```typescript
 // 获取所有可用资源列表
-const resourcesList = await connectionActions.getResources()
+const resourcesList = await mcp.getResources()
 // 返回结果示例：
 [
   {
@@ -183,7 +210,7 @@ const resourcesList = await connectionActions.getResources()
 
 ```typescript
 // 读取指定服务器上的资源
-const resource = await connectionActions.readResource({
+const resource = await mcp.readResource({
   serverName: "服务器名称",
   resourceUri: "资源URI"
 })
@@ -205,7 +232,7 @@ const resource = await connectionActions.readResource({
 
 ```typescript
 // 更新服务器连接
-await connectionActions.updateConnections()
+await mcp.updateConnections()
 // 成功更新服务器连接
 ```
 ```
