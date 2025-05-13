@@ -1,17 +1,18 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ErrorCode,
-  McpError,
-  Tool,
   CallToolResult,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-const TOOLS: Tool[] = [{
-  name: "userProfile",
-  description: "Show user profile",
+import tools from "./mcp-comp-schema.json";
+
+const TOOLS = tools.map((tool) => ({
+  name: tool.name,
+  description: tool.description,
   inputSchema: {
     type: "object",
     properties: {
@@ -20,22 +21,40 @@ const TOOLS: Tool[] = [{
         description: "User name",
       },
     },
-    required: ["userName"]
+    required: ["userName"],
   },
-}
-];
+}));
+// const TOOLS: Tool[] = [
+//   {
+//     name: "UserProfile",
+//     description: "Show user profile",
+//     inputSchema: {
+//       type: "object",
+//       properties: {
+//         userName: {
+//           type: "string",
+//           description: "User name",
+//         },
+//       },
+//       required: ["userName"],
+//     },
+//   },
+// ];
 
 class MCPImageCompression {
   server: Server;
   constructor() {
-    this.server = new Server({
-      name: "mcp-component-render",
-      version: "1.0.0",
-    }, {
-      capabilities: {
-        tools: {},
+    this.server = new Server(
+      {
+        name: "mcp-component-render",
+        version: "1.0.0",
       },
-    });
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
 
     this.setupHandlers();
     this.setupErrorHandling();
@@ -45,37 +64,41 @@ class MCPImageCompression {
       console.error("[MCP Error]", error);
     };
 
-    process.on('SIGINT', async () => {
+    process.on("SIGINT", async () => {
       await this.stop();
       process.exit(0);
     });
   }
 
-
   private setupHandlers() {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: TOOLS
+      tools: TOOLS,
     }));
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) =>
-      this.handleToolCall(request.params.name, request.params.arguments ?? {})
+      this.handleToolCall(request.params.name, request.params.arguments ?? {}),
     );
   }
   /**
    * Handles tool call requests
    */
-  private async handleToolCall(name: string, args: any): Promise<CallToolResult> {
+  private async handleToolCall(
+    name: string,
+    args: any,
+  ): Promise<CallToolResult> {
     const { userName } = args;
     switch (name) {
-      case "userProfile": {
+      case "UserProfile": {
         try {
           return {
-            content: [{
-              type: "text",
-              text: `user name is ${userName}`,
-            }],
+            content: [
+              {
+                type: "text",
+                text: `user name is ${userName}`,
+              },
+            ],
             _meta: {
               aiOutput: {
                 type: "text",
@@ -88,19 +111,17 @@ class MCPImageCompression {
                   avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=1",
                   email: `${userName}@example.com`,
                   phone: "+1 234 567 890",
-                  skills: [
-                    { name: "JavaScript", color: "gold" },
-                  ],
+                  skills: [{ name: "JavaScript", color: "gold" }],
                   stats: {
                     projects: 24,
                     followers: 1489,
                     following: 583,
                   },
-                }
-              }
+                },
+              },
             },
-            isError: false
-          }
+            isError: false,
+          };
         } catch (error) {
           if (error instanceof McpError) {
             throw error;
@@ -108,17 +129,16 @@ class MCPImageCompression {
 
           throw new McpError(
             ErrorCode.InternalError,
-            `Failed to process transcript: ${(error as Error).message}`
+            `Failed to process transcript: ${(error as Error).message}`,
           );
         }
       }
       default: {
         throw new McpError(ErrorCode.MethodNotFound, `Tool ${name} not found`, {
           code: ErrorCode.MethodNotFound,
-          message: `Tool ${name} not found`
+          message: `Tool ${name} not found`,
         });
       }
-
     }
   }
   /**
@@ -127,7 +147,6 @@ class MCPImageCompression {
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-
   }
   /**
    * Stops the server
@@ -136,7 +155,7 @@ class MCPImageCompression {
     try {
       await this.server.close();
     } catch (error) {
-      console.error('Error while stopping server:', error);
+      console.error("Error while stopping server:", error);
     }
   }
 }
@@ -158,7 +177,7 @@ main().catch((error) => {
   process.exit(1);
 });
 
-process.on('SIGINT', async () => {
+process.on("SIGINT", async () => {
   await server.stop();
   process.exit(0);
-})
+});

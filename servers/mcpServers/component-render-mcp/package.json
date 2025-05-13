@@ -2,11 +2,12 @@
   "name": "demo-mcp-server",
   "version": "1.0.0",
   "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  }
 }

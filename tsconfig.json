@@ -9,6 +9,11 @@
     "resolveJsonModule": true, // 允许导入 json 文件
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      // For development
+      "@mcp-synergy/*": ["./packages/*/src"],
+      "@mcp-synergy/host": ["./packages/mcp-host/src"]
+    }
   }
 }

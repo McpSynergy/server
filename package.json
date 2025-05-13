@@ -3,17 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
   "main": "index.js",
   "scripts": {
-    "dev:host": "cd packages/mcp-host && pnpm dev",
-    "start:host": "cd packages/mcp-host && pnpm start",
+    "build:mcpServers": "cd servers/mcpServers && pnpm build",
     "dev:express": "cd servers/express && pnpm dev",
+    "dev:host": "cd packages/mcp-host && pnpm dev",
     "start:express": "cd servers/express && pnpm start",
-    "build:mcpServers": "cd servers/mcpServers && pnpm build"
+    "start:host": "cd packages/mcp-host && pnpm start"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@types/express": "^5.0.0",
@@ -23,5 +23,11 @@
     "rimraf": "^6.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
-  }
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "syncpack": "^13.0.3",
+    "turbo": "^2.5.2"
+  },
+  "packageManager": "pnpm@7.8.0"
 }

@@ -14,7 +14,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "dev": "tsx src/main.ts",
+    "dev": "rollup -c --environment BUILD:development --watch --no-watch.clearScreen",
     "start": "npm run build && node dist/main.js",
     "format": "prettier --write \"src/**/*.{js,ts,mjs}\"",
     "build": "npm run format && shx rm -rf dist && rollup -c --environment BUILD:production && shx chmod 755 dist/*.js",

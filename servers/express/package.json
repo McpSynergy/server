@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx src/main.ts",
+    "dev": "tsx --watch --watch-preserve-output src/main.ts",
     "build": "rimraf dist && rollup -c --environment BUILD:production",
     "start": "pnpm build && node dist/main.js && shx chmod 755 dist/*.js"
   },
@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@mcp-synergy/host": "workspace:*",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "pkce-challenge": "^5.0.0"
   },
