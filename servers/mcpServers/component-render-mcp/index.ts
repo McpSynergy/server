@@ -21,25 +21,10 @@ const TOOLS = tools.map((tool) => ({
         description: "User name",
       },
     },
-    required: ["userName"],
+    required: tool.propertySchema.required || []
   },
 }));
-// const TOOLS: Tool[] = [
-//   {
-//     name: "UserProfile",
-//     description: "Show user profile",
-//     inputSchema: {
-//       type: "object",
-//       properties: {
-//         userName: {
-//           type: "string",
-//           description: "User name",
-//         },
-//       },
-//       required: ["userName"],
-//     },
-//   },
-// ];
+
 
 class MCPImageCompression {
   server: Server;
@@ -88,9 +73,10 @@ class MCPImageCompression {
     name: string,
     args: any,
   ): Promise<CallToolResult> {
-    const { userName } = args;
+
     switch (name) {
       case "UserProfile": {
+        const { userName } = args;
         try {
           return {
             content: [
@@ -132,6 +118,21 @@ class MCPImageCompression {
             `Failed to process transcript: ${(error as Error).message}`,
           );
         }
+      }
+      case "Cart": {
+        return {
+          content: [
+            { type: "text", text: "Book list" },
+          ],
+          _meta: {
+            aiOutput: {
+              type: "text",
+              content: `Cart is starting to render...`,
+            },
+            props: {
+            },
+          },
+        };
       }
       default: {
         throw new McpError(ErrorCode.MethodNotFound, `Tool ${name} not found`, {

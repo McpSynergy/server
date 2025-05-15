@@ -1,5 +1,31 @@
 [
   {
+    "name": "Cart",
+    "propertySchema": {
+      "type": "object",
+      "properties": {
+        "*/\ninte": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": ""
+        },
+        "th user\n */\nexp": {
+          "type": "object",
+          "description": ""
+        },
+        "User {\n  na": {
+          "type": "object",
+          "description": ""
+        }
+      },
+      "required": []
+    },
+    "description": "Display shopping cart information",
+    "serverName": "mcp-component-render"
+  },
+  {
     "name": "UserProfile",
     "propertySchema": {
       "type": "object",

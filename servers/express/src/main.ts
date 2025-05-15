@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import "dotenv/config";
 
 import { MCPHost } from "@mcp-synergy/host";
+import { books } from "./book";
 
 const mcpHost = new MCPHost("./mcp_servers.config.json", true);
 
@@ -45,12 +46,13 @@ app.post("/message", async (req, res) => {
     // @ts-ignore
     const toolsList = tools;
 
-    console.log(123123123, tools);
-
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
         // @ts-ignore
         cur.tools.forEach((item) => {
+
+          console.log(`${cur.server_name}_${item.name}`);
+
           pre.push({
             type: "function",
             function: {
@@ -68,6 +70,12 @@ app.post("/message", async (req, res) => {
       return pre;
     }, [] as any[]);
 
+
+    console.log({
+      availableTools: JSON.stringify(availableTools, null, 2)
+    });
+
+
     const response = await openai.chat.completions.create({
       messages: messages || [
         { role: "system", content: "You are a helpful assistant." },
@@ -83,6 +91,11 @@ app.post("/message", async (req, res) => {
     let meta: any = {};
 
     let responseMessage = content.message.content;
+
+    console.log({
+      content
+    });
+
 
     if (content.finish_reason === "tool_calls") {
       // @ts-ignore
@@ -106,7 +119,7 @@ app.post("/message", async (req, res) => {
         type: string;
         content: string;
       };
-      const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`, **result**:\n`;
+      const prefix = `Matched tool \`${functionName}\` in MCP server \`${serverName}\`;`;
       const aiOutput =
         apiOutput?.type === "text" ? apiOutput?.content || "" : "";
       meta = {
@@ -115,15 +128,17 @@ app.post("/message", async (req, res) => {
         componentProps: res?._meta?.props,
         aiOutput,
       };
-      responseMessage = `${prefix}${formatJson(JSON.stringify(res, null, 2))}`;
+      // responseMessage = `${prefix}${formatJson(JSON.stringify(res, null, 2))}`;
+      responseMessage = prefix
     }
 
     res.write(
       JSON.stringify({
         code: 0,
         data: {
-          content:
-            responseMessage + `${meta?.aiOutput ? `\n${meta?.aiOutput}` : ""}`,
+          // content:
+          //   responseMessage + `${meta?.aiOutput ? `\n${meta?.aiOutput}` : ""}`,
+          content: responseMessage,
           meta,
         },
       }),
@@ -134,6 +149,27 @@ app.post("/message", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+app.get("/books", async (req, res) => {
+  res.json({
+    code: 0,
+    data: books,
+  });
+});
+app.get("/books/:bookId", async (req, res) => {
+  const { bookId } = req.params;
+  const book = books.find((book) => book.id === bookId);
+  res.json({
+    code: 0,
+    data: book,
+  });
+});
+
+
+
+
+
+
 
 app.listen(port, (error) => {
   if (error) {
