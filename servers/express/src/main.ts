@@ -1,15 +1,25 @@
 import cors from "cors";
 import express from "express";
 import { signatureMiddleware } from "./middleware/signatureMiddleware";
-
 import OpenAI from "openai";
-
 import "dotenv/config";
-
 import { MCPHost } from "@mcp-synergy/host";
 import { books } from "./book";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const mcpHost = new MCPHost("./mcp_servers.config.json", true);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const mcpHost = new MCPHost({
+  mcpServer: {
+    configPath: "./mcp_servers.config.json"
+  },
+  mcpComponent: {
+    configPath: "./mcp_components.config.json"
+  }
+});
 
 const openai = new OpenAI({
   baseURL: "https://api.deepseek.com",
@@ -165,10 +175,36 @@ app.get("/books/:bookId", async (req, res) => {
   });
 });
 
+app.get("/api/config", async (req, res) => {
+  const config = fs.readFileSync(path.join(__dirname, "..", "mcp_components.config.json"), "utf-8");
+  res.json({
+    code: 0,
+    data: JSON.parse(config),
+  });
+})
 
+app.post("/api/config", async (req, res) => {
+  const { config } = req.body;
 
+  //将 config 保存在项目的根路径
+  fs.writeFileSync(path.join(__dirname, "..", "mcp_components.config.json"), JSON.stringify(config, null, 2));
 
-
+  try {
+    // 刷新 mcp 的配置
+    await mcpHost.updateConnections();
+    res.json({
+      code: 0,
+      data: config,
+    });
+  } catch (error) {
+    console.error("Error updating MCP connections:", error);
+    res.status(500).json({
+      code: 500,
+      message: "Failed to update MCP connections",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+})
 
 
 app.listen(port, (error) => {

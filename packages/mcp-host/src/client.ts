@@ -3,7 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { Resource, McpError, CallToolRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js'
-import { MCPClientConfig } from './types.js'
+import { MCPClientConfig, MCPComponentConfig } from './types.js'
 import { z } from 'zod'
 import { getSystemNpxPath, getSystemUvxPath, isWin32 } from './utils.js'
 import { logClient, errorClient } from './colors.js'
@@ -15,9 +15,11 @@ export class MCPClient {
 
   private notificationHandlers: Map<string, Function> = new Map()
 
-  constructor(config: MCPClientConfig) {
-    this.clientConfig = config
+  private componentConfig: MCPComponentConfig[]
 
+  constructor(config: MCPClientConfig, componentConfig: MCPComponentConfig[]) {
+    this.clientConfig = config
+    this.componentConfig = componentConfig
     // 创建 MCP 协议客户端
     this.mcpClient = new Client(
       {
@@ -47,7 +49,18 @@ export class MCPClient {
     if (command === 'uvx') {
       return this.generateUvxCommand(sourceServerConfig)
     }
-    return sourceServerConfig
+
+    // 确保环境变量中包含必要的 PATH
+    const env = {
+      ...sourceServerConfig.env,
+      PATH: process.env.PATH || '',
+      MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
+    }
+
+    return {
+      ...sourceServerConfig,
+      env,
+    }
   }
 
   // 生成 npx 命令
@@ -67,7 +80,9 @@ export class MCPClient {
         args: ['/c', currentNpxPath, ...args],
         env: {
           NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+          PATH: process.env.PATH || '',
           ...env,
+          MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
         },
         cwd,
       }
@@ -79,9 +94,10 @@ export class MCPClient {
       args: ['-c', `'${currentNpxPath}' ${args.join(' ')}`],
       env: {
         NPM_CONFIG_REGISTRY: npmMirrorRegistry,
-        ...env,
         PATH: process.env.PATH || '', // 传递当前进程的 PATH
         NODE_PATH: process.env.NODE_PATH || process.execPath, // 设置 NODE_PATH
+        ...env,
+        MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
       },
       cwd,
     }
@@ -105,7 +121,9 @@ export class MCPClient {
         args: ['/c', currentUvxPath, ...args],
         env: {
           UV_DEFAULT_INDEX: uvDefaultIndex,
+          PATH: process.env.PATH || '',
           ...env,
+          MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
         },
         cwd,
       }
@@ -117,8 +135,9 @@ export class MCPClient {
       args: ['-c', `'${currentUvxPath}' ${args.join(' ')}`],
       env: {
         UV_DEFAULT_INDEX: uvDefaultIndex,
-        ...env,
         PATH: process.env.PATH || '', // 传递当前进程的 PATH
+        ...env,
+        MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
       },
       cwd,
     }
@@ -144,7 +163,10 @@ export class MCPClient {
         return new StdioClientTransport({
           command: this.clientConfig.serverConfig.command,
           args: this.clientConfig.serverConfig.args || [],
-          env: this.clientConfig.serverConfig.env || undefined,
+          env: {
+            ...this.clientConfig.serverConfig.env,
+            MCP_COMPONENT_CONFIG: JSON.stringify(this.componentConfig),
+          },
           cwd: this.clientConfig.serverConfig.cwd || undefined,
         })
       case 'sse':

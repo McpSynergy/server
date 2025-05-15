@@ -7,14 +7,17 @@ import {
   toolsBatch,
   updateConnections,
 } from './actions'
-import { MCPConnectionManager } from './host'
+import { MCPConnectionManager, MCPHostConfig } from './host'
+
+
 
 export class MCPHost {
   private connectionManager: MCPConnectionManager | null = null
-  constructor(configPath: string, dev?: boolean) {
+  constructor(config: MCPHostConfig) {
+    const { mcpServer, mcpComponent } = config
     this.connectionManager = new MCPConnectionManager({
-      configPath,
-      dev,
+      mcpServer,
+      mcpComponent
     })
   }
   start() {
@@ -25,18 +28,18 @@ export class MCPHost {
   }
   withAction =
     <T extends (first: any, ...args: any[]) => any>(action: T) =>
-    (
-      ...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never
-    ):
-      | (ReturnType<T> & {
+      (
+        ...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never
+      ):
+        | (ReturnType<T> & {
           meta: Record<string, any>
         })
-      | null => {
-      if (!this.connectionManager) {
-        return null
+        | null => {
+        if (!this.connectionManager) {
+          return null
+        }
+        return action(this.connectionManager, ...args)
       }
-      return action(this.connectionManager, ...args)
-    }
   getTools = this.withAction(getTools)
   toolCall = this.withAction(toolCall)
   toolsBatch = this.withAction(toolsBatch)

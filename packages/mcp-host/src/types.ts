@@ -24,5 +24,12 @@ export interface MCPServerConfig {
   sse_url?: string
 }
 
+export interface MCPComponentConfig {
+  name: string
+  description: string
+  serverName: string
+  propertySchema: Record<string, any>
+}
+
 /** Server 连接状态 */
 export type MCPConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error'

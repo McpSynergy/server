@@ -1,9 +1,21 @@
 import { MCPClient } from './client.js'
 import { MCPClientConfig, MCPConnectionStatus, MCPServerConfig } from './types.js'
-import { convertToClientConfig, getServerConfig } from './utils.js'
+import { convertToClientConfig, getMcpComponentConfig, getServerConfig } from './utils.js'
 import { isDeepStrictEqual } from 'node:util'
 import chokidar, { FSWatcher } from 'chokidar'
 import { logHost, errorHost } from './colors.js'
+
+export interface MCPHostConfig {
+  mcpServer: {
+    configPath: string
+  },
+  /**
+   * 它不是 mcpclient 的配置，而是使用了 mcp component 或者是云函数的配置
+   */
+  mcpComponent: {
+    configPath: string
+  }
+}
 
 export class MCPConnectionManager {
   private connections = new Map<string, MCPClient>()
@@ -17,17 +29,24 @@ export class MCPConnectionManager {
 
   private configPath: string
 
-  private watcher?: FSWatcher
-  constructor(options: { configPath: string; dev?: boolean }) {
-    const { dev = process.env.NODE_ENV === 'development', configPath } = options
-    this.configPath = configPath
-    logHost(`dev: ${dev}`)
+  private mcpComponent: MCPHostConfig['mcpComponent']
 
-    if (dev) {
-      this.watcher = chokidar.watch(this.configPath, {
+  private watcher?: FSWatcher
+  constructor(options: MCPHostConfig) {
+    const { mcpServer, mcpComponent } = options
+    this.configPath = mcpServer.configPath
+    this.startWatch(mcpServer.configPath)
+    this.startWatch(mcpComponent.configPath)
+    this.mcpComponent = mcpComponent
+    this.start()
+  }
+
+  startWatch(path: string) {
+    if (process.env.NODE_ENV === 'development') {
+      this.watcher = chokidar.watch(path, {
         persistent: true,
       })
-      logHost(`Watching config file <${configPath}> for changes...`)
+      logHost(`Watching config file <${path}> for changes...`)
 
       this.watcher.on('change', async (path) => {
         logHost(`Config file <${path}> has changed, updating connections...`)
@@ -35,7 +54,7 @@ export class MCPConnectionManager {
         logHost('Connections updated successfully')
       })
     }
-    this.start()
+
   }
   // 启动连接管理器
   async start(): Promise<void> {
@@ -123,6 +142,7 @@ export class MCPConnectionManager {
 
   // 创建新连接
   async createConnection(serverName: string, config: MCPClientConfig): Promise<MCPClient> {
+    const mcpComponentConfig = await getMcpComponentConfig(this.mcpComponent.configPath)
     // 检查是否已有正在进行的连接请求
     const existingPromise = this.connectionPromises.get(serverName)
     if (existingPromise) {
@@ -134,7 +154,10 @@ export class MCPConnectionManager {
     const connectionPromise = (async () => {
       try {
         this.connectionStatus.set(serverName, 'connecting')
-        const client = new MCPClient(config)
+
+        // 获取 mcpComponentConfig 中 serverName 对应的组件配置，可能是多个
+        const componentConfig = mcpComponentConfig.filter((item) => item.serverName === serverName) ?? []
+        const client = new MCPClient(config, componentConfig)
         await client.connectToServer()
         this.connections.set(serverName, client)
         this.connectionStatus.set(serverName, 'connected')

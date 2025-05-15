@@ -8,7 +8,9 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import tools from "./mcp-comp-schema.json";
+// import tools from "./mcp-comp-schema.json";
+
+const tools = process.env.MCP_COMPONENT_CONFIG ? JSON.parse(process.env.MCP_COMPONENT_CONFIG) as any[] : [];
 
 const TOOLS = tools.map((tool) => ({
   name: tool.name,

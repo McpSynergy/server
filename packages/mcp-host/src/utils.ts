@@ -1,4 +1,4 @@
-import { MCPClientConfig, MCPServerConfig } from './types.js'
+import { MCPClientConfig, MCPComponentConfig, MCPServerConfig } from './types.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { platform } from 'node:process'
@@ -31,6 +31,19 @@ export async function getServerConfig(path: string): Promise<MCPServerConfig[]> 
       return JSON.parse(config)?.mcp_servers ?? []
     }
     throw new Error(`不存在服务器配置文件: ${path}`)
+  } catch (error) {
+    throw error
+  }
+}
+
+
+export async function getMcpComponentConfig(path: string): Promise<MCPComponentConfig[]> {
+  try {
+    if (existsSync(path)) {
+      const config = readFileSync(path, 'utf-8')
+      return JSON.parse(config) ?? []
+    }
+    throw new Error(`不存在组件配置文件: ${path}`)
   } catch (error) {
     throw error
   }
