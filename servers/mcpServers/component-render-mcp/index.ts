@@ -10,23 +10,23 @@ import {
 
 // import tools from "./mcp-comp-schema.json";
 
-const tools = process.env.MCP_COMPONENT_CONFIG ? JSON.parse(process.env.MCP_COMPONENT_CONFIG) as any[] : [];
-
-const TOOLS = tools.map((tool) => ({
-  name: tool.name,
-  description: tool.description,
-  inputSchema: {
-    type: "object",
-    properties: {
-      userName: {
-        type: "string",
-        description: "User name",
+const getTools = () => {
+  const tools = process.env.MCP_COMPONENT_CONFIG ? JSON.parse(process.env.MCP_COMPONENT_CONFIG) as any[] : [];
+  return tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: {
+      type: "object",
+      properties: {
+        userName: {
+          type: "string",
+          description: "User name",
+        },
       },
+      required: tool.propertySchema.required || []
     },
-    required: tool.propertySchema.required || []
-  },
-}));
-
+  }));
+};
 
 class MCPImageCompression {
   server: Server;
@@ -60,7 +60,7 @@ class MCPImageCompression {
   private setupHandlers() {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: TOOLS,
+      tools: getTools(),
     }));
 
     // Handle tool calls

@@ -36,7 +36,6 @@ export async function getServerConfig(path: string): Promise<MCPServerConfig[]> 
   }
 }
 
-
 export async function getMcpComponentConfig(path: string): Promise<MCPComponentConfig[]> {
   try {
     if (existsSync(path)) {

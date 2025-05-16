@@ -33,7 +33,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "cors": "^2.8.5",
+    "deep-diff": "^1.0.2",
     "express": "^5.0.1",
+    "jsondiffpatch": "^0.7.3",
     "pkce-challenge": "^5.0.0",
     "zod": "^3.24.2"
   },
@@ -44,6 +46,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/cors": "^2.8.17",
+    "@types/deep-diff": "^1.0.5",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.10",
     "chokidar": "^4.0.3",

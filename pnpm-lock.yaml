@@ -38,11 +38,14 @@ importers:
       '@rollup/plugin-terser': ^0.4.4
       '@rollup/plugin-typescript': ^12.1.2
       '@types/cors': ^2.8.17
+      '@types/deep-diff': ^1.0.5
       '@types/express': ^5.0.0
       '@types/node': ^22.13.10
       chokidar: ^4.0.3
       cors: ^2.8.5
+      deep-diff: ^1.0.2
       express: ^5.0.1
+      jsondiffpatch: ^0.7.3
       pkce-challenge: ^5.0.0
       prettier: ^3.5.3
       rollup: ^4.35.0
@@ -54,7 +57,9 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk': 1.10.2
       cors: 2.8.5
+      deep-diff: 1.0.2
       express: 5.1.0
+      jsondiffpatch: 0.7.3
       pkce-challenge: 5.0.0
       zod: 3.24.3
     devDependencies:
@@ -64,6 +69,7 @@ importers:
       '@rollup/plugin-terser': 0.4.4_rollup@4.40.0
       '@rollup/plugin-typescript': 12.1.2_dg2sjq75s72n5lkbs6p22vjd5m
       '@types/cors': 2.8.17
+      '@types/deep-diff': 1.0.5
       '@types/express': 5.0.1
       '@types/node': 22.14.1
       chokidar: 4.0.3
@@ -136,6 +142,10 @@ packages:
     resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
     dev: true
+
+  /@dmsnell/diff-match-patch/1.1.0:
+    resolution: {integrity: sha512-yejLPmM5pjsGvxS9gXablUSbInW7H976c/FJ4iQxWIm7/38xBySRemTPDe34lhg1gVLbJntX0+sH0jYfU+PN9A==}
+    dev: false
 
   /@esbuild/aix-ppc64/0.25.3:
     resolution: {integrity: sha512-W8bFfPA8DowP8l//sxjJLSLkD8iEjMc7cBVyP+u4cEv9sM7mdUCkgsj+t0n/BWPFtv7WWCN5Yzj0N6FJNUUqBQ==}
@@ -710,6 +720,10 @@ packages:
       '@types/node': 22.14.1
     dev: true
 
+  /@types/deep-diff/1.0.5:
+    resolution: {integrity: sha512-PQyNSy1YMZU1hgZA5tTYfHPpUAo9Dorn1PZho2/budQLfqLu3JIP37JAavnwYpR1S2yFZTXa3hxaE4ifGW5jaA==}
+    dev: true
+
   /@types/estree/1.0.7:
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
     dev: true
@@ -1037,6 +1051,10 @@ packages:
         optional: true
     dependencies:
       ms: 2.1.3
+    dev: false
+
+  /deep-diff/1.0.2:
+    resolution: {integrity: sha512-aWS3UIVH+NPGCD1kki+DCU9Dua032iSsO43LqQpcs4R3+dVv7tX0qBGjiVHJHjplsoUM2XRO/KB92glqc68awg==}
     dev: false
 
   /deepmerge/4.3.1:
@@ -1619,6 +1637,14 @@ packages:
   /jsonc-parser/3.3.1:
     resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
     dev: true
+
+  /jsondiffpatch/0.7.3:
+    resolution: {integrity: sha512-zd4dqFiXSYyant2WgSXAZ9+yYqilNVvragVNkNRn2IFZKgjyULNrKRznqN4Zon0MkLueCg+3QaPVCnDAVP20OQ==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    dependencies:
+      '@dmsnell/diff-match-patch': 1.1.0
+    dev: false
 
   /kleur/3.0.3:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}

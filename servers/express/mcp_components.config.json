@@ -79,5 +79,56 @@
     },
     "description": "Show user profile",
     "serverName": "mcp-component-render"
+  },
+  {
+    "name": "Cart",
+    "propertySchema": {
+      "type": "object",
+      "properties": {
+        "books": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "author": {
+                "type": "string"
+              },
+              "cover": {
+                "type": "string"
+              },
+              "price": {
+                "type": "number"
+              },
+              "count": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "author",
+              "cover",
+              "price",
+              "count"
+            ]
+          }
+        },
+        "handleGoBack": {
+          "type": "object"
+        },
+        "onRemove": {
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+    "description": "Display shopping cart information",
+    "serverName": "mcp-component-render"
   }
 ]

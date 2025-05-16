@@ -18,7 +18,8 @@ const mcpHost = new MCPHost({
   },
   mcpComponent: {
     configPath: "./mcp_components.config.json"
-  }
+  },
+  watch: true
 });
 
 const openai = new OpenAI({
@@ -55,6 +56,11 @@ app.post("/message", async (req, res) => {
 
     // @ts-ignore
     const toolsList = tools;
+
+    console.log({
+      toolsList: JSON.stringify(toolsList, null, 2)
+    });
+
 
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
@@ -190,8 +196,6 @@ app.post("/api/config", async (req, res) => {
   fs.writeFileSync(path.join(__dirname, "..", "mcp_components.config.json"), JSON.stringify(config, null, 2));
 
   try {
-    // 刷新 mcp 的配置
-    await mcpHost.updateConnections();
     res.json({
       code: 0,
       data: config,

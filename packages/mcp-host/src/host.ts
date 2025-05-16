@@ -4,23 +4,51 @@ import { convertToClientConfig, getMcpComponentConfig, getServerConfig } from '.
 import { isDeepStrictEqual } from 'node:util'
 import chokidar, { FSWatcher } from 'chokidar'
 import { logHost, errorHost } from './colors.js'
+import fs from 'fs/promises'
+import * as jsondiffpatch from 'jsondiffpatch'
+
+interface ConfigChange {
+  timestamp: number
+  path: string
+  changes: {
+    added: any[]
+    removed: any[]
+    modified: any[]
+  }
+}
+
+interface ConfigHistory {
+  initialConfig: string
+  changes: ConfigChange[]
+}
 
 export interface MCPHostConfig {
   mcpServer: {
     configPath: string
-  },
+  }
   /**
    * 它不是 mcpclient 的配置，而是使用了 mcp component 或者是云函数的配置
    */
   mcpComponent: {
     configPath: string
   }
+  watch: boolean
 }
 
 export class MCPConnectionManager {
   private connections = new Map<string, MCPClient>()
   private connectionStatus = new Map<string, MCPConnectionStatus>()
   private configCache = new Map<string, MCPServerConfig>()
+
+  // 分别存储 server 和 component 的配置历史
+  private serverConfigHistory: ConfigHistory = {
+    initialConfig: '',
+    changes: []
+  }
+  private componentConfigHistory: ConfigHistory = {
+    initialConfig: '',
+    changes: []
+  }
 
   private refreshInProgress = false // 是否有正在进行中的更新操作
 
@@ -32,30 +60,93 @@ export class MCPConnectionManager {
   private mcpComponent: MCPHostConfig['mcpComponent']
 
   private watcher?: FSWatcher
+
+
   constructor(options: MCPHostConfig) {
-    const { mcpServer, mcpComponent } = options
+    const { mcpServer, mcpComponent, watch } = options
     this.configPath = mcpServer.configPath
-    this.startWatch(mcpServer.configPath)
-    this.startWatch(mcpComponent.configPath)
+    this.startWatch(mcpServer.configPath, watch, () => {
+      this.refreshConnections()
+    })
+    this.startWatch(mcpComponent.configPath, watch, async () => {
+      this.refreshConnections(true)
+    })
     this.mcpComponent = mcpComponent
     this.start()
   }
 
-  startWatch(path: string) {
-    if (process.env.NODE_ENV === 'development') {
+  startWatch(path: string, watch: boolean, callback: (newVal: string) => void) {
+    if (watch) {
       this.watcher = chokidar.watch(path, {
         persistent: true,
       })
       logHost(`Watching config file <${path}> for changes...`)
 
+      // 首次启动时读取并保存初始配置
+      fs.readFile(path, 'utf-8').then(content => {
+        if (path === this.configPath) {
+          this.serverConfigHistory.initialConfig = content
+        } else {
+          this.componentConfigHistory.initialConfig = content
+        }
+        logHost(`Initial config saved for <${path}>`)
+      }).catch(error => {
+        errorHost(`Failed to read initial config for <${path}>:`, error)
+      })
+
       this.watcher.on('change', async (path) => {
         logHost(`Config file <${path}> has changed, updating connections...`)
-        await this.refreshConnections()
-        logHost('Connections updated successfully')
+        try {
+
+          // 读取新文件内容
+          const newContent = await fs.readFile(path, 'utf-8')
+
+          // 调用回调函数
+          callback(newContent)
+
+          await this.refreshConnections()
+          logHost('Connections updated successfully')
+        } catch (error) {
+          errorHost(`Failed to read config file <${path}>:`, error)
+        }
       })
     }
-
   }
+
+  // 获取最近的服务器配置变化
+  getRecentServerChanges(count: number = 5): ConfigChange[] {
+    return this.serverConfigHistory.changes.slice(-count)
+  }
+
+  // 获取最近的组件配置变化
+  getRecentComponentChanges(count: number = 5): ConfigChange[] {
+    return this.componentConfigHistory.changes.slice(-count)
+  }
+
+  // 获取指定时间范围内的服务器配置变化
+  getServerChangesInTimeRange(startTime: number, endTime: number): ConfigChange[] {
+    return this.serverConfigHistory.changes.filter(change =>
+      change.timestamp >= startTime && change.timestamp <= endTime
+    )
+  }
+
+  // 获取指定时间范围内的组件配置变化
+  getComponentChangesInTimeRange(startTime: number, endTime: number): ConfigChange[] {
+    return this.componentConfigHistory.changes.filter(change =>
+      change.timestamp >= startTime && change.timestamp <= endTime
+    )
+  }
+
+  // 清空服务器配置变化历史
+  clearServerChangesHistory() {
+    this.serverConfigHistory.changes = []
+  }
+
+  // 清空组件配置变化历史
+  clearComponentChangesHistory() {
+    this.componentConfigHistory.changes = []
+  }
+
   // 启动连接管理器
   async start(): Promise<void> {
     await this.refreshConnections()
@@ -66,7 +157,7 @@ export class MCPConnectionManager {
   }
 
   // 更新所有连接
-  async refreshConnections(): Promise<void> {
+  async refreshConnections(forceUpdate: boolean = false): Promise<void> {
     // 防止并发执行
     if (this.refreshInProgress) {
       logHost('Connection update operation in progress, skipping refresh')
@@ -87,25 +178,19 @@ export class MCPConnectionManager {
         newConfigMap.set(server.server_name, server)
       })
 
-      // 处理已移除的服务
-      for (const serverName of this.connections.keys()) {
-        if (!newConfigMap.has(serverName)) {
-          // 服务已从配置中移除
+      // 获取当前所有服务器名称
+      const currentServers = new Set(this.connections.keys())
+      const newServers = new Set(newConfigMap.keys())
+
+      // 处理需要删除的服务器
+      for (const serverName of currentServers) {
+        if (!newServers.has(serverName)) {
+          logHost(`Server <${serverName}> has been removed, disconnecting...`)
           await this.removeConnection(serverName)
-          newConfigMap.delete(serverName)
-          logHost(`Server <${serverName}> has been removed, connection disconnected`)
-        } else if (
-          !newConfigMap.get(serverName)?.enabled &&
-          this.configCache.get(serverName)?.enabled
-        ) {
-          // 服务由启用变为禁用
-          await this.removeConnection(serverName)
-          newConfigMap.delete(serverName)
-          logHost(`Server <${serverName}> has been disabled, connection disconnected`)
         }
       }
 
-      // 处理新增或更新的服务
+      // 处理新增和修改的服务器
       for (const [serverName, newConfig] of newConfigMap.entries()) {
         const oldConfig = this.configCache.get(serverName)
 
@@ -113,11 +198,12 @@ export class MCPConnectionManager {
           try {
             if (!this.connections.has(serverName)) {
               // 新增启用的服务
+              logHost(`New server <${serverName}> detected, creating connection...`)
               await this.createConnection(serverName, convertToClientConfig(newConfig))
-            } else if (this.configNeedsUpdate(oldConfig, newConfig)) {
+            } else if (this.configNeedsUpdate(oldConfig, newConfig) || forceUpdate) {
               // 配置已变更，需要重启连接
+              logHost(`Server <${serverName}> configuration changed, restarting connection...`)
               await this.restartConnection(serverName, newConfig)
-              logHost(`Server <${serverName}> connection has been restarted`)
             }
           } catch (error) {
             errorHost(
@@ -125,14 +211,20 @@ export class MCPConnectionManager {
               error
             )
           }
+        } else if (this.connections.has(serverName)) {
+          // 服务被禁用
+          logHost(`Server <${serverName}> has been disabled, disconnecting...`)
+          await this.removeConnection(serverName)
         }
       }
 
-      // 更新配置缓存 - 创建深拷贝，确保缓存和新配置之间不共享引用
+      // 更新配置缓存
       this.configCache = new Map<string, MCPServerConfig>()
       for (const [serverName, config] of newConfigMap.entries()) {
         this.configCache.set(serverName, { ...config })
       }
+
+      logHost('All connections have been updated successfully')
     } catch (error) {
       errorHost('Failed to update connections:', error)
     } finally {
@@ -156,7 +248,11 @@ export class MCPConnectionManager {
         this.connectionStatus.set(serverName, 'connecting')
 
         // 获取 mcpComponentConfig 中 serverName 对应的组件配置，可能是多个
-        const componentConfig = mcpComponentConfig.filter((item) => item.serverName === serverName) ?? []
+        const componentConfig =
+          mcpComponentConfig.filter((item) => item.serverName === serverName) ?? []
+        console.log('创建新的连接', serverName, {
+          componentConfig,
+        })
         const client = new MCPClient(config, componentConfig)
         await client.connectToServer()
         this.connections.set(serverName, client)

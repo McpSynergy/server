@@ -6,9 +6,11 @@ const serverInstallLocks = new Map<string, Promise<any>>()
 
 export const getTools = async (manager: MCPConnectionManager) => {
   await manager?.refreshConnections()
-  const getActiveMcpConnections = () => manager.getAllConnections()
+  const getActiveMcpConnections = manager.getAllConnections()
   const promises = []
-  for (const [server_name, client] of getActiveMcpConnections().entries()) {
+  for (const [server_name, client] of getActiveMcpConnections.entries()) {
+    console.log('获取工具', server_name)
+
     promises.push(
       withTimeoutPromise(
         client.listTools().then((tools) => ({

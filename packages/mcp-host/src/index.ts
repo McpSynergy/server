@@ -9,15 +9,14 @@ import {
 } from './actions'
 import { MCPConnectionManager, MCPHostConfig } from './host'
 
-
-
 export class MCPHost {
   private connectionManager: MCPConnectionManager | null = null
   constructor(config: MCPHostConfig) {
-    const { mcpServer, mcpComponent } = config
+    const { mcpServer, mcpComponent, watch } = config
     this.connectionManager = new MCPConnectionManager({
       mcpServer,
-      mcpComponent
+      mcpComponent,
+      watch,
     })
   }
   start() {
