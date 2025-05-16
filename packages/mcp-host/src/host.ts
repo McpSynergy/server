@@ -5,7 +5,6 @@ import { isDeepStrictEqual } from 'node:util'
 import chokidar, { FSWatcher } from 'chokidar'
 import { logHost, errorHost } from './colors.js'
 import fs from 'fs/promises'
-import * as jsondiffpatch from 'jsondiffpatch'
 
 interface ConfigChange {
   timestamp: number
