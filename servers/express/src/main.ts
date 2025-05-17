@@ -210,7 +210,23 @@ app.post("/api/config", async (req, res) => {
   }
 })
 
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// 添加错误处理中间件
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
+
+// 添加 404 处理
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).send('Not Found');
+});
+
+// 确保在所有路由之后启动服务器
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+// 导出 app 实例供 Vercel 使用
+export default app;

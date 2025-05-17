@@ -13,6 +13,11 @@ export const signatureMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
+  // 如果是 Get / 则不进行签名验证
+  if (req.method === 'GET' && req.path === '/') {
+    next();
+    return;
+  }
   const signature = req.headers['x-signature'] as string;
   if (!signature) {
     return res.status(401).json({ error: 'Signature is required' });
