@@ -9,10 +9,9 @@
   "main": "index.js",
   "scripts": {
     "build:mcpServers": "cd servers/mcpServers && pnpm build",
-    "dev:express": "cd servers/express && pnpm dev",
-    "dev:host": "cd packages/mcp-host && pnpm dev",
-    "start:express": "cd servers/express && pnpm start",
-    "start:host": "cd packages/mcp-host && pnpm start"
+    "dev:express": "pnpm build:mcpServers && cd servers/express && pnpm dev",
+    "build:express": "pnpm build:mcpServers && cd servers/express && pnpm build",
+    "start:express": "cd servers/express && pnpm start"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
