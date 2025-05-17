@@ -3,7 +3,6 @@
   "buildCommand": "cd servers/express && pnpm install && pnpm build",
   "outputDirectory": "servers/express/dist",
   "installCommand": "pnpm install",
-  "framework": "node",
   "routes": [
     {
       "src": "/(.*)",
