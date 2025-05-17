@@ -15,5 +15,6 @@
       "@mcp-synergy/*": ["./packages/*/src"],
       "@mcp-synergy/host": ["./packages/mcp-host/src"]
     }
-  }
+  },
+  "include": ["api/**/*.ts"]
 }

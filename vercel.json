@@ -2,29 +2,16 @@
   "version": 2,
   "buildCommand": "cd servers/express && pnpm install && pnpm build",
   "outputDirectory": "servers/express/dist",
-  "installCommand": "pnpm install",
-  "functions": {
-    "servers/express/dist/main.js": {
-      "memory": 1024,
-      "maxDuration": 10
+  "builds": [
+    {
+      "src": "servers/express/dist/main.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/books/(.*)",
-      "dest": "servers/express/dist/main.js"
-    },
-    {
-      "src": "/message",
-      "dest": "servers/express/dist/main.js"
-    },
     {
       "src": "/(.*)",
       "dest": "servers/express/dist/main.js"
     }
   ]
-} 
+}

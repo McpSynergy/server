@@ -5,8 +5,10 @@ importers:
   .:
     specifiers:
       '@modelcontextprotocol/sdk': ^1.7.0
+      '@types/cors': ^2.8.17
       '@types/express': ^5.0.0
       '@types/node': ^22.14.1
+      cors: ^2.8.5
       dotenv: ^16.5.0
       openai: ^4.95.1
       prettier: ^3.5.3
@@ -19,12 +21,14 @@ importers:
       '@modelcontextprotocol/sdk': 1.10.2
       '@types/express': 5.0.1
       '@types/node': 22.14.1
+      cors: 2.8.5
       dotenv: 16.5.0
       openai: 4.95.1
       rimraf: 6.0.1
       tsx: 4.19.3
       typescript: 5.8.3
     devDependencies:
+      '@types/cors': 2.8.17
       prettier: 3.5.3
       syncpack: 13.0.4_typescript@5.8.3
       turbo: 2.5.3
