@@ -11,8 +11,8 @@
   },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "servers/express/dist/main.js"
+      "src": "/(.*)",
+      "dest": "/api/index.js"
     },
     {
       "src": "/books/(.*)",
