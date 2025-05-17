@@ -28,7 +28,7 @@ const openai = new OpenAI({
 });
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 
@@ -211,10 +211,6 @@ app.post("/api/config", async (req, res) => {
 })
 
 
-app.listen(port, (error) => {
-  if (error) {
-    console.error("Error starting server:", error);
-    return;
-  }
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });

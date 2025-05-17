@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "cd servers/express && pnpm install && pnpm build",
+  "outputDirectory": "servers/express/dist",
+  "installCommand": "pnpm install",
+  "framework": "node",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "servers/express/dist/main.js",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    }
+  ]
+} 
