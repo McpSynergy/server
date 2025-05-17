@@ -14,12 +14,12 @@ const __dirname = path.dirname(__filename);
 
 const mcpHost = new MCPHost({
   mcpServer: {
-    configPath: "./mcp_servers.config.json"
+    configPath: path.join(process.cwd(), "servers/express/mcp_servers.config.json")
   },
   mcpComponent: {
-    configPath: "./mcp_components.config.json"
+    configPath: path.join(process.cwd(), "servers/express/mcp_components.config.json")
   },
-  watch: true
+  watch: process.env.NODE_ENV !== 'production'
 });
 
 const openai = new OpenAI({
@@ -210,18 +210,21 @@ app.post("/api/config", async (req, res) => {
   }
 })
 
-// 添加错误处理中间件
+// 错误处理中间件
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  res.status(500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  });
 });
 
-// 添加 404 处理
+// 404 处理
 app.use((req: express.Request, res: express.Response) => {
-  res.status(404).send('Not Found');
+  res.status(404).json({ error: "Not Found" });
 });
 
-// 确保在所有路由之后启动服务器
+// 只在非生产环境下启动服务器
 if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

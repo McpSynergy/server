@@ -5,13 +5,25 @@
   "builds": [
     {
       "src": "servers/express/dist/main.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 60,
+        "memory": 1024
+      }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "servers/express/dist/main.js"
+      "dest": "servers/express/dist/main.js",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, x-signature"
+      }
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
