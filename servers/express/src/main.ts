@@ -14,10 +14,10 @@ const __dirname = path.dirname(__filename);
 
 const mcpHost = new MCPHost({
   mcpServer: {
-    configPath: path.join(process.cwd(), "servers/express/mcp_servers.config.json")
+    configPath: path.join(__dirname, "..", "mcp_servers.config.json")
   },
   mcpComponent: {
-    configPath: path.join(process.cwd(), "servers/express/mcp_components.config.json")
+    configPath: path.join(__dirname, "..", "mcp_components.config.json")
   },
   watch: process.env.NODE_ENV !== 'production'
 });
@@ -30,7 +30,14 @@ const openai = new OpenAI({
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+// 配置 CORS
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-signature'],
+  credentials: true,
+  maxAge: 86400
+}));
 
 app.use(express.json());
 // @ts-ignore

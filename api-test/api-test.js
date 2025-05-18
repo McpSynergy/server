@@ -18,8 +18,8 @@ const fetchWithTimeout = async (url, options, timeout = 30000) => {
 
 const testAPI = async () => {
   try {
-    const response = await fetchWithTimeout(
-      "https://server-gd1mgufqo-nelsonyongs-projects.vercel.app/message",
+    const response = await fetch(
+      "https://server-pip7cy0r1-nelsonyongs-projects.vercel.app//message",
       {
         method: "POST",
         headers: {
