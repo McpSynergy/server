@@ -4,7 +4,26 @@
     "propertySchema": {
       "type": "object",
       "properties": {
-        "books": {
+        "handleGoBack": {
+          "type": "object"
+        }
+      },
+      "required": []
+    },
+    "description": "Display shopping cart information",
+    "serverName": "mcp-component-render",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "RecommendBook",
+    "propertySchema": {
+      "type": "object",
+      "properties": {
+        "recommendedBooks": {
           "type": "array",
           "items": {
             "type": "object",
@@ -23,9 +42,6 @@
               },
               "price": {
                 "type": "number"
-              },
-              "count": {
-                "type": "number"
               }
             },
             "required": [
@@ -33,22 +49,31 @@
               "title",
               "author",
               "cover",
-              "price",
-              "count"
+              "price"
             ]
           }
+        }
+      },
+      "required": [
+        "recommendedBooks"
+      ]
+    },
+    "description": "recommend book for user",
+    "serverName": "mcp-component-render",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "book title"
         },
-        "handleGoBack": {
-          "type": "object"
-        },
-        "onRemove": {
-          "type": "object"
+        "author": {
+          "type": "string",
+          "description": "book author"
         }
       },
       "required": []
-    },
-    "description": "Display shopping cart information",
-    "serverName": "mcp-component-render"
+    }
   },
   {
     "name": "UserProfile",
@@ -129,6 +154,18 @@
       ]
     },
     "description": "Show user profile",
-    "serverName": "mcp-component-render"
+    "serverName": "mcp-component-render",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "user name"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
   }
 ]

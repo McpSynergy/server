@@ -8,6 +8,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx --watch --watch-preserve-output src/main.ts",
+    "stop": "pkill -f 'tsx.*src/main.ts'",
     "build": "rimraf dist && rollup -c --environment BUILD:production",
     "start": "node dist/main.js && shx chmod 755 dist/*.js"
   },

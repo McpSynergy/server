@@ -31,7 +31,7 @@ const testAPI = async () => {
           messages: [
             {
               role: "user",
-              content: "1+1=?",
+              content: "西红柿炒蛋怎么做",
             },
           ],
         }),

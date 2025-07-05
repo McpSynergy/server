@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sequential Thinking 流式输出测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .input-section {
+      margin-bottom: 30px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 16px;
+      resize: vertical;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .result-section {
+      margin-top: 30px;
+    }
+
+    .step-container {
+      margin-bottom: 20px;
+      padding: 20px;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+
+    .step-header {
+      font-weight: bold;
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+
+    .step-content {
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .progress {
+      color: #6c757d;
+      font-style: italic;
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .error {
+      color: #dc3545;
+      background: #f8d7da;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .complete {
+      color: #155724;
+      background: #d4edda;
+      padding: 15px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .status {
+      font-size: 14px;
+      color: #6c757d;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>🧠 Sequential Thinking 流式输出测试</h1>
+
+    <div class="input-section">
+      <textarea id="thoughtInput" placeholder="请输入您想要深度思考的问题...">如何制作美味的西红柿炒蛋？</textarea>
+      <br>
+      <button id="startThinking" onclick="startThinking()">开始思考</button>
+      <button id="clearResults" onclick="clearResults()">清空结果</button>
+    </div>
+
+    <div class="result-section">
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    let eventSource = null;
+    let isThinking = false;
+
+    function startThinking() {
+      if (isThinking) {
+        return;
+      }
+
+      const thought = document.getElementById('thoughtInput').value.trim();
+      if (!thought) {
+        alert('请输入思考内容');
+        return;
+      }
+
+      const startBtn = document.getElementById('startThinking');
+      const resultsDiv = document.getElementById('results');
+
+      startBtn.disabled = true;
+      startBtn.textContent = '思考中...';
+      isThinking = true;
+      resultsDiv.innerHTML = '';
+
+      // 构建请求数据
+      const requestData = {
+        serverName: "sequential-thinking",
+        functionName: "sequentialthinking",
+        args: {
+          thought: thought,
+          thoughtNumber: 1,
+          totalThoughts: 5,
+          nextThoughtNeeded: true
+        }
+      };
+
+      // 发送请求
+      fetch('http://localhost:3000/api/tool-call', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          // 检查是否是流式响应
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('text/event-stream')) {
+            handleStreamResponse(response);
+          } else {
+            // 普通响应
+            return response.json().then(data => {
+              displayNormalResponse(data);
+              resetUI();
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          displayError('请求失败: ' + error.message);
+          resetUI();
+        });
+    }
+
+    function handleStreamResponse(response) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      function readStream() {
+        return reader.read().then(({ done, value }) => {
+          if (done) {
+            resetUI();
+            return;
+          }
+
+          const text = decoder.decode(value);
+          const lines = text.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                handleStreamEvent(data);
+              } catch (e) {
+                console.error('解析SSE数据失败:', e);
+              }
+            }
+          }
+
+          return readStream();
+        });
+      }
+
+      readStream();
+    }
+
+    function handleStreamEvent(data) {
+      const resultsDiv = document.getElementById('results');
+
+      switch (data.type) {
+        case 'step':
+          displayStep(data);
+          break;
+        case 'progress':
+          displayProgress(data);
+          break;
+        case 'error':
+          displayError(data.message);
+          break;
+        case 'complete':
+          displayComplete(data);
+          break;
+      }
+    }
+
+    function displayStep(data) {
+      const resultsDiv = document.getElementById('results');
+
+      const stepDiv = document.createElement('div');
+      stepDiv.className = 'step-container';
+      stepDiv.id = `step-${data.step}`;
+
+      stepDiv.innerHTML = `
+                <div class="step-header">步骤 ${data.step}/${data.totalSteps}</div>
+                <div class="step-content">${data.content}</div>
+                ${data.statusInfo ? `<div class="status">思考历史长度: ${data.statusInfo.thoughtHistoryLength || data.step}</div>` : ''}
+            `;
+
+      resultsDiv.appendChild(stepDiv);
+      stepDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function displayProgress(data) {
+      const resultsDiv = document.getElementById('results');
+
+      // 移除之前的进度消息
+      const existingProgress = resultsDiv.querySelector('.progress');
+      if (existingProgress) {
+        existingProgress.remove();
+      }
+
+      const progressDiv = document.createElement('div');
+      progressDiv.className = 'progress';
+      progressDiv.textContent = data.message;
+
+      resultsDiv.appendChild(progressDiv);
+      progressDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function displayError(message) {
+      const resultsDiv = document.getElementById('results');
+
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = message;
+
+      resultsDiv.appendChild(errorDiv);
+      errorDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function displayComplete(data) {
+      const resultsDiv = document.getElementById('results');
+
+      // 移除进度消息
+      const progressDivs = resultsDiv.querySelectorAll('.progress');
+      progressDivs.forEach(div => div.remove());
+
+      const completeDiv = document.createElement('div');
+      completeDiv.className = 'complete';
+      completeDiv.textContent = data.message;
+
+      resultsDiv.appendChild(completeDiv);
+      completeDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function displayNormalResponse(data) {
+      const resultsDiv = document.getElementById('results');
+
+      const responseDiv = document.createElement('div');
+      responseDiv.className = 'step-container';
+      responseDiv.innerHTML = `
+                <div class="step-header">普通响应</div>
+                <div class="step-content">${data.data?.content || JSON.stringify(data, null, 2)}</div>
+            `;
+
+      resultsDiv.appendChild(responseDiv);
+    }
+
+    function resetUI() {
+      const startBtn = document.getElementById('startThinking');
+      startBtn.disabled = false;
+      startBtn.textContent = '开始思考';
+      isThinking = false;
+    }
+
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
+  </script>
+</body>
+
+</html>

@@ -42,6 +42,10 @@ export class MCPClient {
   private async generateCallStdioServerCommand(
     sourceServerConfig: MCPClientConfig['serverConfig']
   ): Promise<MCPClientConfig['serverConfig']> {
+    console.log({
+      config: this.componentConfig
+    });
+
     const command = sourceServerConfig.command || ''
     if (command === 'npx') {
       return this.generateNpxCommand(sourceServerConfig)
@@ -49,7 +53,6 @@ export class MCPClient {
     if (command === 'uvx') {
       return this.generateUvxCommand(sourceServerConfig)
     }
-
     // 确保环境变量中包含必要的 PATH
     const env = {
       ...sourceServerConfig.env,
