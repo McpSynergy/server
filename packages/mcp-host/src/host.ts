@@ -42,11 +42,11 @@ export class MCPConnectionManager {
   // 分别存储 server 和 component 的配置历史
   private serverConfigHistory: ConfigHistory = {
     initialConfig: '',
-    changes: []
+    changes: [],
   }
   private componentConfigHistory: ConfigHistory = {
     initialConfig: '',
-    changes: []
+    changes: [],
   }
 
   private refreshInProgress = false // 是否有正在进行中的更新操作
@@ -60,17 +60,20 @@ export class MCPConnectionManager {
 
   private watcher?: FSWatcher
 
-
   constructor(options: MCPHostConfig) {
-    const { mcpServer, mcpComponent, watch } = options
-    this.configPath = mcpServer.configPath
-    this.startWatch(mcpServer.configPath, watch, () => {
+    const {
+      mcpServer: { configPath: mcpServerConfigPath },
+      mcpComponent: { configPath: mcpComponentConfigPath },
+      watch,
+    } = options
+    this.configPath = mcpServerConfigPath
+    this.startWatch(mcpServerConfigPath, watch, () => {
       this.refreshConnections()
     })
-    this.startWatch(mcpComponent.configPath, watch, async () => {
+    this.startWatch(mcpComponentConfigPath, watch, async () => {
       this.refreshConnections(true)
     })
-    this.mcpComponent = mcpComponent
+    this.mcpComponent = { configPath: mcpComponentConfigPath }
     this.start()
   }
 
@@ -82,21 +85,22 @@ export class MCPConnectionManager {
       logHost(`Watching config file <${path}> for changes...`)
 
       // 首次启动时读取并保存初始配置
-      fs.readFile(path, 'utf-8').then(content => {
-        if (path === this.configPath) {
-          this.serverConfigHistory.initialConfig = content
-        } else {
-          this.componentConfigHistory.initialConfig = content
-        }
-        logHost(`Initial config saved for <${path}>`)
-      }).catch(error => {
-        errorHost(`Failed to read initial config for <${path}>:`, error)
-      })
+      fs.readFile(path, 'utf-8')
+        .then((content) => {
+          if (path === this.configPath) {
+            this.serverConfigHistory.initialConfig = content
+          } else {
+            this.componentConfigHistory.initialConfig = content
+          }
+          logHost(`Initial config saved for <${path}>`)
+        })
+        .catch((error) => {
+          errorHost(`Failed to read initial config for <${path}>:`, error)
+        })
 
       this.watcher.on('change', async (path) => {
         logHost(`Config file <${path}> has changed, updating connections...`)
         try {
-
           // 读取新文件内容
           const newContent = await fs.readFile(path, 'utf-8')
 
@@ -124,15 +128,15 @@ export class MCPConnectionManager {
 
   // 获取指定时间范围内的服务器配置变化
   getServerChangesInTimeRange(startTime: number, endTime: number): ConfigChange[] {
-    return this.serverConfigHistory.changes.filter(change =>
-      change.timestamp >= startTime && change.timestamp <= endTime
+    return this.serverConfigHistory.changes.filter(
+      (change) => change.timestamp >= startTime && change.timestamp <= endTime
     )
   }
 
   // 获取指定时间范围内的组件配置变化
   getComponentChangesInTimeRange(startTime: number, endTime: number): ConfigChange[] {
-    return this.componentConfigHistory.changes.filter(change =>
-      change.timestamp >= startTime && change.timestamp <= endTime
+    return this.componentConfigHistory.changes.filter(
+      (change) => change.timestamp >= startTime && change.timestamp <= endTime
     )
   }
 

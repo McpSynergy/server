@@ -1,7 +1,7 @@
 [
   {
     "name": "MediaCard",
-    "description": "电影卡片组件，用于展示电影的基本信息并提供播放、收藏、分享等交互功能。",
+    "description": "电影信息展示卡片组件，用于展示电影的基本信息并提供播放、收藏、分享等交互功能。仅适用于电影类型的内容展示。参数名称必须严格按照JSON格式输出，不得翻译或转义。",
     "serverName": "mcp-component-render",
     "propertySchema": {
       "type": "object",
@@ -85,7 +85,7 @@
       "properties": {
         "title": {
           "type": "string",
-          "description": "电影标题，必填字段。参数名必须保持为\"title\"，不得翻译为其他语言。title 不能包含 电影 字符串"
+          "description": "电影标题，必填字段。参数名必须保持为\"title\"，不得翻译为其他语言。"
         },
         "command": {
           "type": "string",
@@ -94,7 +94,7 @@
             "open",
             "none"
           ],
-          "description": "电影操作命令 enum, play: 播放电影,open: 打开电影,none: 查询或者搜索或者无操作命令",
+          "description": "电影操作命令。当用户明确表达播放或打开电影意图时，必须从枚举值中选择：play（播放）、open（打开）或空字符串（无操作）。如果用户没有明确的操作意图，则返回空字符串。参数名必须保持为\"command\"，不得翻译为其他语言。",
           "default": "none"
         }
       },
@@ -105,7 +105,7 @@
   },
   {
     "name": "MusicCard",
-    "description": "音乐卡片组件，用于展示音乐的基本信息并提供播放、收藏、分享等交互功能。",
+    "description": "音乐信息展示卡片组件，用于展示音乐的基本信息并提供播放、收藏、分享等交互功能。仅适用于音乐类型的内容展示。参数名称必须严格按照JSON格式输出，不得翻译或转义。",
     "serverName": "mcp-component-render",
     "propertySchema": {
       "type": "object",
@@ -184,14 +184,14 @@
           "enum": [
             "play",
             "open",
-            "none"
+            ""
           ],
-          "description": "音乐操作命令 enum, play: 播放音乐,open: 打开音乐,none: 查询或者搜索或者无操作命令",
+          "description": "音乐操作命令。当用户明确表达播放或打开音乐意图时，必须从枚举值中选择：play（播放）、open（打开）或空字符串（无操作）。如果用户没有明确的操作意图，则返回空字符串。参数名必须保持为\"command\"，不得翻译为其他语言。",
           "default": "none"
         },
         "title": {
           "type": "string",
-          "description": "音乐标题，必填字段。参数名必须保持为\"title\"，不得翻译为其他语言。title 不能包含 电影 字符串"
+          "description": "音乐标题，必填字段。参数名必须保持为\"title\"，不得翻译为其他语言。"
         }
       },
       "required": [

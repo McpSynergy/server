@@ -9,5 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "uuid": "^11.1.0"
   }
 }

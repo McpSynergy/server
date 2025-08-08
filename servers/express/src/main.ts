@@ -15,12 +15,9 @@ app.use(mainRouter);
 // 配置错误处理
 configureErrorHandling(app);
 
-// 只在非生产环境下启动服务器
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
-}
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
 // 导出 app 实例供 Vercel 使用
 export default app;

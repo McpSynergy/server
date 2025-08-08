@@ -14,12 +14,13 @@
     "start:express": "cd servers/express && pnpm start"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.23",
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.14.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "openai": "^4.95.1",
+    "openai": "^5.8.2",
     "rimraf": "^6.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"

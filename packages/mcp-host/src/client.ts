@@ -43,8 +43,8 @@ export class MCPClient {
     sourceServerConfig: MCPClientConfig['serverConfig']
   ): Promise<MCPClientConfig['serverConfig']> {
     console.log({
-      config: this.componentConfig
-    });
+      config: this.componentConfig,
+    })
 
     const command = sourceServerConfig.command || ''
     if (command === 'npx') {

@@ -1,5 +1,6 @@
 import { openai } from "../config/openai";
-import { MessageRequest } from "../types";
+
+console.log("[Model]", process.env.OPENAI_MODEL);
 
 export class AIService {
   static async createChatCompletion(messages: any[], tools?: any[]) {
@@ -7,10 +8,23 @@ export class AIService {
       messages: messages || [
         { role: "system", content: "You are a helpful assistant." },
       ],
-      model: "deepseek-chat",
-      tools: tools ?? [],
+      // model: "Qwen/Qwen3-8B",
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
+      tools: tools,
+      stream: true
     });
   }
+
+  // static async createOllamaChatCompletion(messages: any[], tools?: any[]) {
+  //   return await ollama.chat({
+  //     messages: messages || [
+  //       { role: "system", content: "You are a helpful assistant." },
+  //     ],
+  //     model: "deepseek-r1:7b",
+  //     tools: tools,
+  //     think: false
+  //   });
+  // }
 
   // 存储思考历史的静态变量
   private static thinkingHistory: string[] = [];
@@ -113,17 +127,20 @@ ${markdownStructure}
         },
         { role: "user", content: nextThinkingPrompt }
       ],
-      model: "deepseek-chat",
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo", // 使用统一的模型配置
       max_tokens: 400,
       temperature: 0.6
     });
 
     const newThoughtContent = aiResponse.choices[0].message.content || `第${stepNumber}步思考内容`;
 
-    // 将新的思考内容添加到历史中
-    this.thinkingHistory.push(newThoughtContent);
+    // 清理 DeepSeek 工具调用标记
+    const cleanedContent = newThoughtContent.replace(/<｜tool▁call▁end｜>|<｜tool▁calls▁end｜>/g, '').trim();
 
-    return newThoughtContent;
+    // 将新的思考内容添加到历史中
+    this.thinkingHistory.push(cleanedContent);
+
+    return cleanedContent;
   }
 
   // 从初始思考中提取主题

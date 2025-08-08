@@ -38,11 +38,23 @@ export interface MessageRequest {
   }>;
 }
 
+export interface ToolCallResult {
+  serverName: string;
+  toolName: string;
+  componentProps?: any;
+  messageId?: string;
+  aiOutput: string;
+}
+
 export interface ToolMeta {
   serverName: string;
   toolName: string;
   componentProps?: any;
   aiOutput: string;
+  messageId?: string;
+  isPartial?: boolean;
+  isComplete?: boolean;
+  toolCallResult?: ToolCallResult;
   thinkingProcess?: {
     thought: string;
     thoughtNumber: number;
@@ -59,7 +71,7 @@ export interface ToolMeta {
 // 统一的响应数据结构
 export interface UnifiedResponseData {
   content: string;
-  meta: ToolMeta;
+  meta: ToolMeta[];
 }
 
 // 统一的API响应格式

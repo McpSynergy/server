@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    const config = fs.readFileSync(path.join(__dirname, "..", "..", "mcp_components.config.json"), "utf-8");
+    const config = fs.readFileSync(path.join(__dirname, "mcp_components.config.json"), "utf-8");
     const response = {
       code: 0,
       data: JSON.parse(config),

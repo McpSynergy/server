@@ -1,3 +1,4 @@
+import { Agent } from "node:http";
 import { mcpHost } from "../config/mcp";
 
 export class MCPService {
@@ -8,7 +9,6 @@ export class MCPService {
     console.log({
       toolsList: JSON.stringify(toolsList, null, 2)
     });
-
     const availableTools = toolsList?.reduce((pre, cur) => {
       if (cur?.tools?.length) {
         // @ts-ignore
@@ -24,11 +24,7 @@ export class MCPService {
             function: {
               name: `${cur.server_name}_${item.name}`,
               description: item?.description || "",
-              parameters: {
-                type: schemaType,
-                required: inputSchema.required || [],
-                properties: inputSchema.properties || {},
-              },
+              parameters: inputSchema,
             },
           });
         });

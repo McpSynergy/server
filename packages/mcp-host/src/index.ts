@@ -27,18 +27,18 @@ export class MCPHost {
   }
   withAction =
     <T extends (first: any, ...args: any[]) => any>(action: T) =>
-      (
-        ...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never
-      ):
-        | (ReturnType<T> & {
+    (
+      ...args: Parameters<T> extends [any, ...infer Rest] ? Rest : never
+    ):
+      | (ReturnType<T> & {
           meta: Record<string, any>
         })
-        | null => {
-        if (!this.connectionManager) {
-          return null
-        }
-        return action(this.connectionManager, ...args)
+      | null => {
+      if (!this.connectionManager) {
+        return null
       }
+      return action(this.connectionManager, ...args)
+    }
   getTools = this.withAction(getTools)
   toolCall = this.withAction(toolCall)
   toolsBatch = this.withAction(toolsBatch)
