@@ -13,6 +13,10 @@ export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientC
       env: serverConfig.env,
       cwd: serverConfig.cwd,
       sseUrl: serverConfig.sse_url,
+      httpUrl: serverConfig.http_url,
+      httpHeaders: serverConfig.http_headers,
+      httpSessionId: serverConfig.http_session_id,
+      httpReconnectionOptions: serverConfig.http_reconnection_options,
     },
   }
 }

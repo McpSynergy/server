@@ -1,6 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+
 import { Resource, McpError, CallToolRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js'
 import { MCPClientConfig, MCPComponentConfig } from './types.js'
@@ -10,7 +12,7 @@ import { logClient, errorClient } from './colors.js'
 
 export class MCPClient {
   private mcpClient: Client
-  private transport: StdioClientTransport | SSEClientTransport | null = null
+  private transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport | null = null
   private clientConfig: MCPClientConfig
 
   private notificationHandlers: Map<string, Function> = new Map()
@@ -156,7 +158,7 @@ export class MCPClient {
     }
   }
 
-  private createTransport(): StdioClientTransport | SSEClientTransport {
+  private createTransport(): StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport {
     switch (this.clientConfig.transportType) {
       case 'stdio':
         if (!this.clientConfig.serverConfig.command) {
@@ -181,6 +183,29 @@ export class MCPClient {
         }
 
         return new SSEClientTransport(new URL(this.clientConfig.serverConfig.sseUrl))
+      case 'streamable_http':
+        if (
+          !this.clientConfig.serverConfig.httpUrl ||
+          !this.isSSEUrl(this.clientConfig.serverConfig.httpUrl)
+        ) {
+          throw new Error('[MCP Client] invalid Streamable HTTP URL')
+        }
+        const httpReconn = this.clientConfig.serverConfig.httpReconnectionOptions
+        const reconnectionOptions = httpReconn
+          ? {
+            maxReconnectionDelay: httpReconn.maxReconnectionDelay ?? 30000,
+            initialReconnectionDelay: httpReconn.initialReconnectionDelay ?? 1000,
+            reconnectionDelayGrowFactor: httpReconn.reconnectionDelayGrowFactor ?? 1.5,
+            maxRetries: httpReconn.maxRetries ?? 2,
+          }
+          : undefined
+        return new StreamableHTTPClientTransport(new URL(this.clientConfig.serverConfig.httpUrl), {
+          requestInit: {
+            headers: this.clientConfig.serverConfig.httpHeaders,
+          },
+          sessionId: this.clientConfig.serverConfig.httpSessionId,
+          reconnectionOptions,
+        })
       default:
         throw new Error(
           `[MCP Client] Unsupported transport type: ${this.clientConfig.transportType}`
