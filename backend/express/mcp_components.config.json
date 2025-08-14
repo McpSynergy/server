@@ -1,0 +1,223 @@
+[
+  {
+    "name": "MediaCard",
+    "description": "Search movie",
+    "serverName": "mcp-component-render",
+    "propertySchema": {
+      "type": "object",
+      "properties": {
+        "movie": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "poster": {
+              "type": "string"
+            },
+            "year": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "rating": {
+              "type": "string"
+            },
+            "genre": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "nasProps": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "ext": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "name",
+                "ext",
+                "type"
+              ]
+            },
+            "command": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "description",
+            "poster",
+            "year",
+            "duration",
+            "rating",
+            "genre",
+            "nasProps"
+          ]
+        }
+      },
+      "required": [
+        "movie"
+      ]
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "movie name"
+        },
+        "command": {
+          "type": "string",
+          "enum": [
+            "play",
+            "open",
+            "none"
+          ],
+          "description": "movie command",
+          "default": "none"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "MusicCard",
+    "description": "Search music",
+    "serverName": "mcp-component-render",
+    "propertySchema": {
+      "type": "object",
+      "properties": {
+        "musicData": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "artist": {
+              "type": "string"
+            },
+            "cover": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number"
+            },
+            "url": {
+              "type": "string"
+            },
+            "nasProps": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "ext": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "name",
+                "ext",
+                "type",
+                "desc"
+              ]
+            },
+            "command": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "artist",
+            "cover",
+            "duration",
+            "nasProps"
+          ]
+        }
+      },
+      "required": [
+        "musicData"
+      ]
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": [
+            "play",
+            "open",
+            "none"
+          ],
+          "description": "music command",
+          "default": "none"
+        },
+        "title": {
+          "type": "string",
+          "description": "music name"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "UserProfile",
+    "serverName": "mcp-component-render",
+    "propertySchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "user name"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+]
