@@ -109,6 +109,142 @@ const cleanToolArgs = (args: string): string => {
 
 const router = Router();
 
+// 安全提取任意字符串中的首个 JSON 对象片段
+const extractFirstJsonObject = (text: string): string | null => {
+  if (!text) return null;
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    if (depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
+};
+
+// 将 role: "tool" 的消息转换为普通 assistant 轨迹信息
+const sanitizeMessagesForOpenAI = (messages: Array<{ role: string; content: any }>) => {
+  const result: Array<{ role: string; content: string } | { role: string; content: any }> = [];
+  for (const msg of messages) {
+    if (msg.role !== "tool") {
+      result.push(msg as any);
+      continue;
+    }
+
+    const rawText = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
+    const jsonSlice = extractFirstJsonObject(rawText);
+    let toolName = "unknown_tool";
+    let serverName = "unknown_server";
+    let aiOutput: string | undefined;
+    let parsed: any = undefined;
+    if (jsonSlice) {
+      try {
+        parsed = JSON.parse(jsonSlice);
+        toolName = parsed?.toolName || toolName;
+        serverName = parsed?.serverName || serverName;
+        aiOutput = parsed?._meta?.aiOutput?.content || parsed?._meta?.aiOutput?.text;
+      } catch {
+        // ignore parse errors, fall back to raw
+      }
+    }
+
+    const summaryText = aiOutput
+      ? aiOutput
+      : (parsed ? JSON.stringify(parsed).slice(0, 500) + (JSON.stringify(parsed).length > 500 ? "…" : "")
+        : rawText.slice(0, 500) + (rawText.length > 500 ? "…" : ""));
+
+    const assistantTrace = {
+      role: "assistant",
+      content:
+        `Tool result:\n- tool: ${toolName}\n- server: ${serverName}\nPreview:\n\n` +
+        "```json\n" + summaryText + "\n```\n\n" +
+        "Assume the action already ran. Use this result; do not suggest re-running."
+    } as const;
+
+    result.push(assistantTrace as any);
+  }
+  return result;
+};
+
+// 将 context 序列化为简洁的系统提示，注入给大模型
+const formatContextForSystemMessage = (context: any): string => {
+  try {
+    if (Array.isArray(context)) {
+      const lines = context.map((item) => {
+        if (item && typeof item === "object" && "description" in item && "value" in item) {
+          return `- ${String(item.description)}: ${String(item.value)}`;
+        }
+        return `- ${typeof item === "object" ? JSON.stringify(item) : String(item)}`;
+      });
+      return `Session context:\n${lines.join("\n")}\n\nUse this context when answering. If language or theme are given, match the language and respect the theme.`;
+    }
+    // 对象或其他类型，直接 JSON 序列化
+    const json = typeof context === "string" ? context : JSON.stringify(context);
+    return `Session context (JSON):\n\n\`\`\`json\n${json}\n\`\`\`\n\nUse this context in your reply.`.replace(/`/g, "`");
+  } catch {
+    return `Context hint: ${String(context)}`;
+  }
+};
+
+// JSON Pointer 工具
+const decodePointerToken = (token: string): string => token.replace(/~1/g, "/").replace(/~0/g, "~");
+const parseJsonPointer = (path: string): string[] => {
+  if (!path || path === "/") return [];
+  if (path[0] !== "/") return [];
+  return path
+    .substring(1)
+    .split("/")
+    .map(decodePointerToken);
+};
+
+const getValueByPointer = (obj: any, path: string): any => {
+  try {
+    const tokens = parseJsonPointer(path);
+    let cur: any = obj;
+    for (const raw of tokens) {
+      if (cur === null || cur === undefined) return undefined;
+      const isArray = Array.isArray(cur);
+      if (isArray) {
+        const idx = raw === "-" ? cur.length : Number.isInteger(Number(raw)) ? Number(raw) : NaN;
+        if (Number.isNaN(idx) || idx < 0 || idx >= cur.length) return undefined;
+        cur = cur[idx];
+      } else if (typeof cur === "object") {
+        cur = (cur as any)[raw];
+      } else {
+        return undefined;
+      }
+    }
+    return cur;
+  } catch {
+    return undefined;
+  }
+};
+
+const coerceValueToMatchType = (example: any, value: any): any => {
+  if (Array.isArray(example)) {
+    return Array.isArray(value) ? value : [value];
+  }
+  if (typeof example === "string") {
+    return typeof value === "string" ? value : String(value);
+  }
+  return value;
+};
+
+const normalizePatchWithStateType = (state: any, delta: any[]): any[] => {
+  if (!state || typeof state !== "object") return delta;
+  return delta.map((op) => {
+    if (!op || typeof op !== "object") return op;
+    if (!("value" in op)) return op;
+    const current = getValueByPointer(state, op.path);
+    if (current === undefined) return op;
+    return { ...op, value: coerceValueToMatchType(current, op.value) };
+  });
+};
+
+// 无需额外检测：通过工具调用 state_delta 由大模型直接判断是否生成 JSON Patch
+
 router.post("/", async (req, res) => {
   try {
     res.setHeader("Content-Type", "text/event-stream");
@@ -133,21 +269,145 @@ router.post("/", async (req, res) => {
     // 获取可用工具列表
     const availableTools = await MCPService.getAvailableTools();
 
+    const baseSystem = { role: "system", content: "You are a helpful assistant. If no tool can be called, briefly state the reason and the next step." } as const;
+    const contextSystem = input.context
+      ? ({ role: "system", content: formatContextForSystemMessage(input.context) } as const)
+      : null;
+    const stateSystem = input.state
+      ? (() => {
+        const fields = input.state && typeof input.state === 'object' ? Object.entries(input.state as Record<string, any>) : [];
+        const lines: string[] = [];
+        const valuesSnapshot: Record<string, any> = {};
+        for (const [key, meta] of fields) {
+          const desc = (meta && typeof meta === 'object' && 'description' in meta) ? String(meta.description) : '';
+          const val = (meta && typeof meta === 'object' && 'value' in meta) ? meta.value : undefined;
+          const valuePreview = typeof val === 'string' ? val : JSON.stringify(val);
+          lines.push(`- ${key}: ${desc}\n  - current value: ${valuePreview}\n  - patch path: /${key}/value`);
+          valuesSnapshot[key] = val;
+        }
+        const guardrails = [
+          "State is the single source of truth.",
+          "When answering questions about state, use the exact values shown above.",
+          "If 'checked' and 'options' exist and the user asks about completed vs remaining items:",
+          "- completed = states.checked.value (exact string match)",
+          "- remaining = states.options.value minus states.checked.value",
+          "Do not guess or drop items. Preserve the exact strings from state."
+        ].join("\n");
+        const content =
+          `State fields (edit at '/<field>/value'):\n${lines.join('\n')}\n\nWhen the user asks to change state, call tool "state_delta" with JSON Patch (RFC6902).\n- Paths MUST be '/<field>/value' exactly (no deeper paths).\n- Use 'replace' for existing keys, 'add' for new keys.\n- Preserve types (arrays stay arrays, strings stay strings).\n\n${guardrails}\n\nState JSON snapshot (values only):\n\n\`\`\`json\n${JSON.stringify(valuesSnapshot)}\n\`\`\``;
+        return { role: 'system', content } as const;
+      })()
+      : null;
+
     const messages_ = [
-      { role: "system", content: "You are a helpful assistant." },
-      ...input.messages.map((item: Message) => ({
-        ...item,
-        content: (item?.content ?? "") + (process.env.MESSAGE_SUFFIX ?? "")
-      }))
+      baseSystem,
+      ...(contextSystem ? [contextSystem] : []),
+      ...(stateSystem ? [stateSystem] : []),
+      ...input.messages.map((item: Message) => {
+        const suffix = process.env.MESSAGE_SUFFIX ?? "";
+        const shouldAppendSuffix = item.role === "user"; // 仅对用户消息追加后缀，避免破坏 tool JSON
+        return {
+          ...item,
+          content: (item?.content ?? "") + (shouldAppendSuffix ? suffix : "")
+        };
+      }),
     ];
 
     console.log("messages_", messages_);
-
-    // eventService.sendCustomEvent("LOADING", 'intention_loading');
-    // eventService.sendStepStarted("intention_loading");
-    // eventService.sendCustomEvent("LOADING", 'search_knowledge_loading');
     eventService.sendStepStarted("LOADING");
-    // eventService.sendCustomEvent("LOADING", 'rerank_loading');
+
+
+
+    const userInputTools: OpenAITool[] = input.tools?.map((item: any) => {
+      // 如果 parameters 是数组（如 setTheme 的入参风格），转换为 JSON Schema 对象
+      const parametersSchema = Array.isArray(item?.parameters)
+        ? (() => {
+          const properties: Record<string, any> = {};
+          const required: string[] = [];
+
+          for (const param of item.parameters as any[]) {
+            if (!param?.name) continue;
+            const propertySchema: Record<string, any> = {};
+
+            // 类型推断：若无显式类型，默认 string
+            if (param.type) propertySchema.type = param.type;
+            else propertySchema.type = "string";
+
+            if (param.description) propertySchema.description = param.description;
+            if (param.enum) propertySchema.enum = param.enum;
+            if (param.default !== undefined) propertySchema.default = param.default;
+            if (param.items) propertySchema.items = param.items;
+
+            properties[param.name] = propertySchema;
+            if (param.required) required.push(param.name);
+          }
+
+          const schema: any = {
+            type: "object",
+            properties
+          };
+          if (required.length) schema.required = required;
+          return schema;
+        })()
+        : item?.parameters;
+
+      return {
+        type: "function",
+        function: {
+          name: item.name,
+          description: item.description,
+          parameters: parametersSchema
+        }
+      } as OpenAITool;
+    }) ?? [];
+
+
+
+    // 内置状态变更工具（由大模型在需要时调用）
+    const stateDeltaTool: OpenAITool = {
+      type: "function",
+      function: {
+        name: "state_delta",
+        description: "Call when the user wants to modify state. Provide JSON Patch ops (RFC6902). Use 'replace' for existing keys, 'add' for new. Paths MUST be '/<field>/value' exactly.",
+        parameters: {
+          type: "object",
+          properties: {
+            delta: {
+              type: "array",
+              description: "JSON Patch ops to apply to state",
+              items: {
+                type: "object",
+                properties: {
+                  op: { type: "string", enum: ["add", "replace", "remove"] },
+                  path: { type: "string", description: "Must be '/<field>/value'" },
+                  value: {}
+                },
+                required: ["op", "path"]
+              }
+            }
+          },
+          required: ["delta"]
+        }
+      }
+    };
+
+    const tools = [
+      ...(((availableTools as OpenAITool[] | undefined) ?? [])),
+      ...((userInputTools as OpenAITool[]) ?? []),
+      stateDeltaTool
+    ];
+
+    // console.log("userInputTools", JSON.stringify(tools, null, 2));
+    // console.log("tools", tools);
+
+
+    // 过滤/转换不受支持的 role: "tool"，并注入可读的工具调用轨迹
+    const sanitizedMessages = sanitizeMessagesForOpenAI(messages_ as any);
+
+    // 通过工具调用 state_delta 来完成状态修改的识别与下发
+
+    // 调用 AI 并获取流式响应
+    const stream = await AIService.createChatCompletion(sanitizedMessages as any, tools);
     eventService.sendStepFinished("LOADING");
 
     eventService.sendStepStarted("SEARCH_KNOWLEDGE");
@@ -155,31 +415,36 @@ router.post("/", async (req, res) => {
 
     eventService.sendStepStarted("RERANK");
     eventService.sendStepFinished("RERANK");
-
-
-    const userInputTools: OpenAITool[] = input.tools?.map(item => ({
-      type: "function",
-      function: {
-        name: item.name,
-        description: item.description,
-        parameters: item.parameters
-      }
-    })) ?? []
-
-    // 调用 AI 并获取流式响应
-    const stream = await AIService.createChatCompletion(messages_, [...userInputTools, ...((availableTools as OpenAITool[] | undefined) ?? [])]);
-
-    eventService.sendCustomEvent("LOADING", 'qa_loading');
+    // eventService.sendCustomEvent("LOADING", 'qa_loading');
 
     let toolCallContent: ToolCallAggregate | null = null;
     let isToolCall = false;
     const messageId = `msg_${Date.now()}`;
     let messageStarted = false;
+    // 兜底：当模型无任何文本增量输出时，给出简短说明与下一步建议
+    const fallbackText = (() => {
+      try {
+        const ctxText = (contextSystem?.content || "") + "\n" + (stateSystem?.content || "");
+        const userTextConcat = (input.messages || [])
+          .filter((m: any) => m?.role === "user" && typeof m?.content === "string")
+          .map((m: any) => m.content)
+          .join("\n");
+        const looksZh = /zh\b|中文|简体/.test(ctxText) || /[\u4e00-\u9fa5]/.test(userTextConcat);
+        if (looksZh) {
+          return "抱歉，本次请求未生成可用内容。可能原因：上下文不充分、内容被过滤或模型临时无响应。建议：重试、缩短或具体化问题，或稍后再试。";
+        }
+        return "Sorry, no content was generated. Possible reasons: insufficient context, content filtering, or a temporary model issue. Try again, be more specific, or retry later.";
+      } catch {
+        return "抱歉，本次未生成内容，请稍后重试或具体化问题。";
+      }
+    })();
 
     // 处理流式响应
     for await (const chunk of (stream as unknown as AsyncIterable<OpenAIStreamChunk>)) {
       const choice = chunk?.choices?.[0];
       if (!choice) continue;
+
+      console.log("choice", JSON.stringify(choice, null, 2));
 
       // 收集工具调用的内容
       if (choice.delta?.tool_calls?.length) {
@@ -211,8 +476,11 @@ router.post("/", async (req, res) => {
         if (messageStarted) {
           eventService.sendTextMessageEnd(messageId);
           messageStarted = false;
+        } else if (!isToolCall) {
+          // 未产生任何文本输出，发送兜底说明
+          eventService.sendTextMessage(fallbackText, messageId);
         }
-        // 没有工具调用，直接结束
+        // 没有工具调用，结束
         if (!isToolCall) {
           eventService.end();
           return;
@@ -222,6 +490,10 @@ router.post("/", async (req, res) => {
 
     // 如果不是工具调用，结束响应并返回
     if (!isToolCall) {
+      // 兜底：循环退出但仍无文本
+      if (!messageStarted) {
+        eventService.sendTextMessage(fallbackText, messageId);
+      }
       eventService.end();
       return;
     }
@@ -236,6 +508,45 @@ router.post("/", async (req, res) => {
       for (const toolCall of toolCalls) {
         const toolName = toolCall.function.name;
         const toolArgs = toolCall.function.arguments;
+
+        // 内置状态变更工具：直接下发 STATE_DELTA 事件
+        if (toolName === "state_delta") {
+          try {
+            const cleanedArgs = cleanToolArgs(toolArgs);
+            let parsed = {} as any;
+            try {
+              parsed = JSON.parse(cleanedArgs);
+            } catch (jsonError) {
+              throw new Error(`Invalid JSON for state_delta tool: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}\nReceived: ${cleanedArgs}`);
+            }
+            const delta = Array.isArray(parsed) ? parsed : parsed?.delta;
+            if (!Array.isArray(delta)) {
+              throw new Error("state_delta requires an array at root or at 'delta' property");
+            }
+            // 基础校验
+            const sanitized = delta.filter((op) => op && typeof op === 'object' && typeof op.op === 'string' && typeof op.path === 'string');
+            if (!sanitized.length) throw new Error("Empty or invalid patch operations");
+
+            // 严格校验 path 格式为 '/<field>/value'
+            const pathRegex = /^\/[A-Za-z0-9_-]+\/value$/;
+            for (const op of sanitized) {
+              if (!pathRegex.test(op.path)) {
+                throw new Error(`Invalid JSON Patch path: ${op.path}. Path MUST be '/<field>/value'.`);
+              }
+            }
+
+            // 根据当前状态数据结构，对值进行类型约束（数组与字符串保持一致）
+            const normalized = normalizePatchWithStateType(input.state, sanitized);
+
+            eventService.sendStateDelta(normalized);
+
+            // 轻量确认
+            eventService.sendTextMessage("已根据你的请求更新状态。", messageId);
+          } catch {
+            eventService.sendTextMessage("解析或应用状态变更失败。", messageId);
+          }
+          continue; // 不走外部工具分支
+        }
 
         if (availableTools?.find(item => item.function.name === toolName)) {
           const serverName = toolName.split("_")[0];
@@ -260,6 +571,23 @@ router.post("/", async (req, res) => {
             }
 
             const toolCallId = toolCall.id ?? `${toolName}_${toolCall.index}`;
+            // eventService.sendTextMessage(`Calling tool ${serverName}.${functionName}`, messageId);
+
+            const argsForConfirmText = JSON.stringify(parsedArgs);
+            const toolConfirmMessages = [
+              { role: "system", content: "Confirm the tool action briefly. State what was done and key parameters. Match the user's language. Keep it short." },
+              ...(contextSystem ? [contextSystem as any] : []),
+              { role: "system", content: `Tool: ${toolName}. Params: ${argsForConfirmText}` }
+            ] as any[];
+
+            const callStream = await AIService.createChatCompletion(toolConfirmMessages);
+            for await (const chunk of callStream as any) {
+              const content = chunk.choices[0];
+              if (content.delta?.content) {
+                eventService.sendTextMessage(content.delta.content, messageId);
+              }
+            }
+
             // 发送工具调用开始事件
             eventService.sendToolCallStart(
               toolName,
@@ -303,35 +631,16 @@ router.post("/", async (req, res) => {
                 toolCallId
               );
 
+              eventService.sendTextMessage(`Call tool end ${serverName}.${functionName}`, messageId);
+
               // 如果是自定义事件（如音乐播放），发送自定义事件
               if (toolResult?._meta?.type === "custom") {
                 const name = (toolResult as any)._meta?.name as string | undefined;
                 eventService.sendCustomEvent((name ?? "LOADING") as any, (toolResult as any)._meta?.value);
               }
-
-              // 发送文本消息
-              // if (aiOutput) {
-              // eventService.sendTextMessage(aiOutput);
-
-              // 这里再调用大模型，组合一下 aiOutput 和 toolResult_ 的内容，再发送给大模型
-              // const messages = [
-              //   { role: "system", content: "You are a helpful assistant." },
-              //   { role: "assistant", content: aiOutput },
-              //   { role: "user", content: JSON.stringify(toolResult_) }
-              // ];
-              // const stream = await AIService.createChatCompletion(messages, availableTools);
-              // for await (const chunk of stream as any) {
-              //   const content = chunk.choices[0];
-              //   // 实时发送所有文本内容
-              //   if (content.delta?.content) {
-              //     eventService.sendTextMessage(content.delta.content, messageId);
-              //   }
-              // }
-              // }
-
             }
           } catch (toolError) {
-            console.error(`工具 ${serverName}.${functionName} 调用失败:`, toolError);
+            console.error(`工具 ${serverName}.${functionName} 调用失败: `, toolError);
             // 发送工具调用结果
             const toolCallId = toolCall.id ?? `${toolName}_${toolCall.index}`;
             eventService.sendToolCallEnd(
@@ -339,10 +648,7 @@ router.post("/", async (req, res) => {
               {},
               toolCallId
             );
-            // eventService.sendRunError(toolError instanceof Error ? toolError : String(toolError));
             eventService.sendTextMessage(`工具 ${serverName}.${functionName} 调用失败`, messageId);
-
-            // const stream = await AIService.createChatCompletion(messages, availableTools);
           }
         } else if (userInputTools?.find(item => item.function.name === toolName)) {
           const toolCallId = toolCall.id ?? `${toolName}_${toolCall.index}`;
@@ -350,19 +656,13 @@ router.post("/", async (req, res) => {
           eventService.sendToolCallArgs(toolCallId, JSON.stringify(toolArgs));
           eventService.sendToolCallEnd(toolName, toolArgs, toolCallId);
           // 调用大模型，组合一下参数和用户的 messages 内容，再发送给大模型
-          const stream = await AIService.createChatCompletion([
-            {
-              role: "system", content: `You are a helpful assistant that provides clear feedback about tool actions. When a tool is called, respond in a natural, confirmatory way that tells the user what has been done. Follow these guidelines:
-- If the tool opens an app or launches something, say "I've opened [app/item name] for you"
-- If the tool searches or looks up information, say "Here's what I found about [search term]"
-- If the tool performs a specific action, say "I've [action] as requested"
-- If the tool involves navigation or location, say "I've found the route to [destination]" or "The location of [place] is..."
-- For any other tools, clearly state what action was taken with the specific parameters used
+          const toolConfirmMessages2 = [
+            { role: "system", content: "Confirm the tool action briefly. State what was done and key parameters. Match the user's language. Keep it short." },
+            ...(contextSystem ? [contextSystem as any] : []),
+            { role: "system", content: `Tool: ${toolName}. Params: ${toolArgs}` }
+          ] as any[];
 
-Always be concise and natural, focusing on confirming what was actually done.` },
-            { role: "assistant", content: "user message language is " + (input.messages[input.messages.length - 1]?.content ?? "") + ", please respond in the same language." },
-            { role: "assistant", content: `Using the tool "${toolName}" with parameters: ${JSON.stringify(toolArgs)}, I'll confirm the action taken.` }
-          ]);
+          const stream = await AIService.createChatCompletion(toolConfirmMessages2);
           for await (const chunk of stream as any) {
             const content = chunk.choices[0];
             if (content.delta?.content) {

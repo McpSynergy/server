@@ -198,5 +198,26 @@
         "title"
       ]
     }
+  },
+  {
+    "name": "UserProfile",
+    "serverName": "mcp-component-render",
+    "propertySchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "用户名"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
   }
 ]

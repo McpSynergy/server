@@ -182,5 +182,11 @@ export type SendEventFunction = {
   (eventType: EventType, data: any): void;
 };
 
+export type StateDeltaEvent = BaseEvent & {
+  type: EventType.STATE_DELTA
+  delta: any[] // JSON Patch operations (RFC 6902)
+}
+
+
 
 export type CustomEventName = "LOADING"

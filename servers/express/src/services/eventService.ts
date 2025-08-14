@@ -3,7 +3,6 @@ import {
   BaseEvent,
   EventType,
   RunAgentInput,
-  SendEventFunction,
   TextMessageStartEvent,
   TextMessageContentEvent,
   TextMessageEndEvent,
@@ -192,6 +191,15 @@ export class EventService {
       name,
       value
     };
+    this.sendEvent(event);
+  }
+
+  // 状态增量事件（JSON Patch）
+  public sendStateDelta(delta: any[]) {
+    const event = {
+      type: EventType.STATE_DELTA,
+      delta
+    } as const;
     this.sendEvent(event);
   }
 

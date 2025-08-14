@@ -15,6 +15,17 @@ export class AIService {
     });
   }
 
+  static async createChatCompletionOnce(messages: any[], tools?: any[]) {
+    return await openai.chat.completions.create({
+      messages: messages || [
+        { role: "system", content: "You are a helpful assistant." },
+      ],
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
+      tools: tools,
+      stream: false
+    });
+  }
+
   // static async createOllamaChatCompletion(messages: any[], tools?: any[]) {
   //   return await ollama.chat({
   //     messages: messages || [
@@ -30,7 +41,7 @@ export class AIService {
   private static thinkingHistory: string[] = [];
   private static currentTopic: string = "";
 
-  static async generateNextThought(stepNumber: number, initialThought?: string, totalSteps?: number, searchResults?: string) {
+  static async generateNextThought(stepNumber: number, initialThought?: string, _totalSteps?: number, searchResults?: string) {
     // 只有在非流式处理时才初始化历史（即直接调用且传入了initialThought）
     if (stepNumber === 1 && initialThought && this.thinkingHistory.length === 0) {
       this.thinkingHistory = [initialThought];
@@ -43,7 +54,7 @@ export class AIService {
       : '';
 
     // 根据步骤生成不同的思考方向
-    const thinkingDirections = this.getThinkingDirection(stepNumber, totalSteps || 5);
+    const thinkingDirections = this.getThinkingDirection(stepNumber, _totalSteps || 5);
     const markdownStructure = this.getMarkdownStructure(stepNumber);
 
     const contextAnalysis = this.thinkingHistory.length > 1
@@ -151,7 +162,7 @@ ${markdownStructure}
   }
 
   // 根据步骤获取思考方向
-  private static getThinkingDirection(stepNumber: number, totalSteps: number): string {
+  private static getThinkingDirection(stepNumber: number, _totalSteps: number): string {
     // 现在stepNumber从2开始，但我们要调整逻辑让它看起来从1开始
     const adjustedStepNumber = stepNumber - 1;
 
@@ -415,7 +426,7 @@ ${stepGuidance}
   }
 
   // 初始化思考历史（不调用AI，直接使用用户输入）
-  static initializeThinkingHistory(firstThought: string, totalSteps: number) {
+  static initializeThinkingHistory(firstThought: string, _totalSteps: number) {
     this.thinkingHistory = [firstThought];
     this.currentTopic = this.extractTopicFromThought(firstThought);
     console.log(`🔍 初始化思考历史 - 主题: ${this.currentTopic}, 第一步内容: ${firstThought.substring(0, 50)}...`);
