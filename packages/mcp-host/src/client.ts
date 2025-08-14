@@ -12,7 +12,11 @@ import { logClient, errorClient } from './colors.js'
 
 export class MCPClient {
   private mcpClient: Client
-  private transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport | null = null
+  private transport:
+    | StdioClientTransport
+    | SSEClientTransport
+    | StreamableHTTPClientTransport
+    | null = null
   private clientConfig: MCPClientConfig
 
   private notificationHandlers: Map<string, Function> = new Map()
@@ -158,7 +162,10 @@ export class MCPClient {
     }
   }
 
-  private createTransport(): StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport {
+  private createTransport():
+    | StdioClientTransport
+    | SSEClientTransport
+    | StreamableHTTPClientTransport {
     switch (this.clientConfig.transportType) {
       case 'stdio':
         if (!this.clientConfig.serverConfig.command) {
@@ -193,11 +200,11 @@ export class MCPClient {
         const httpReconn = this.clientConfig.serverConfig.httpReconnectionOptions
         const reconnectionOptions = httpReconn
           ? {
-            maxReconnectionDelay: httpReconn.maxReconnectionDelay ?? 30000,
-            initialReconnectionDelay: httpReconn.initialReconnectionDelay ?? 1000,
-            reconnectionDelayGrowFactor: httpReconn.reconnectionDelayGrowFactor ?? 1.5,
-            maxRetries: httpReconn.maxRetries ?? 2,
-          }
+              maxReconnectionDelay: httpReconn.maxReconnectionDelay ?? 30000,
+              initialReconnectionDelay: httpReconn.initialReconnectionDelay ?? 1000,
+              reconnectionDelayGrowFactor: httpReconn.reconnectionDelayGrowFactor ?? 1.5,
+              maxRetries: httpReconn.maxRetries ?? 2,
+            }
           : undefined
         return new StreamableHTTPClientTransport(new URL(this.clientConfig.serverConfig.httpUrl), {
           requestInit: {
